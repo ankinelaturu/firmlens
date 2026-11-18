@@ -18,3 +18,5 @@ Populate from the repo fixture:
 ```
 
 Override paths with `firmlens.autoLoadPaths` in settings if needed.
+
+Opening a `.hex` file in this folder (or any workspace `**/*.hex`) uses the **FirmLens Hex Snapshot** custom editor: record grid with collapsible linear-address blocks, byte coloring, and checksum in the rightmost column.

@@ -2,7 +2,7 @@
   "name": "firmlens",
   "displayName": "FirmLens",
   "description": "Hover C variables and see captured firmware snapshot values (Intel HEX + ELF/DWARF).",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "anki",
   "license": "MIT",
   "engines": {
@@ -12,7 +12,8 @@
   "activationEvents": [
     "onStartupFinished",
     "onLanguage:c",
-    "onLanguage:cpp"
+    "onLanguage:cpp",
+    "onCustomEditor:firmlens.hexViewer"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -24,6 +25,23 @@
       {
         "command": "firmlens.clearSnapshot",
         "title": "FirmLens: Clear Snapshot"
+      },
+      {
+        "command": "firmlens.openHexViewer",
+        "title": "FirmLens: Open Hex Snapshot Viewer",
+        "icon": "$(file-binary)"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "firmlens.hexViewer",
+        "displayName": "FirmLens Hex Snapshot",
+        "selector": [
+          {
+            "filenamePattern": "*.{hex,HEX}"
+          }
+        ],
+        "priority": "default"
       }
     ],
     "configuration": {

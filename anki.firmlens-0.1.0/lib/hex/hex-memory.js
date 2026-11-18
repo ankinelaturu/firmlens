@@ -4,6 +4,7 @@
  */
 
 const fs = require('fs');
+const { decodeRecordLine } = require('./record-decode');
 
 /**
  * @typedef {object} HexReadResult
@@ -50,7 +51,7 @@ function parseIntelHex(text) {
     if (!raw.startsWith(':')) {
       throw new Error(`Intel HEX: missing ':' (line ${lineNo + 1})`);
     }
-    const record = decodeRecord(raw, lineNo + 1);
+    const record = decodeRecordLine(raw, lineNo + 1, { strict: true });
     if (record.type === 0x00) {
       const addr = upperLinear + (upperSegment << 4) + record.address;
       for (let i = 0; i < record.data.length; i += 1) {
@@ -103,37 +104,6 @@ function parseIntelHex(text) {
       return { bytes: out, available };
     },
   };
-}
-
-/**
- * @param {string} line
- * @param {number} lineNo
- */
-function decodeRecord(line, lineNo) {
-  const payload = line.slice(1);
-  if (payload.length < 10 || payload.length % 2 !== 0) {
-    throw new Error(`Intel HEX: bad record length (line ${lineNo})`);
-  }
-  const pairs = payload.match(/.{2}/g);
-  if (!pairs) {
-    throw new Error(`Intel HEX: invalid hex (line ${lineNo})`);
-  }
-  const values = pairs.map((p) => parseInt(p, 16));
-  let sum = 0;
-  for (const v of values) {
-    sum = (sum + v) & 0xff;
-  }
-  if (sum !== 0) {
-    throw new Error(`Intel HEX: checksum mismatch (line ${lineNo})`);
-  }
-  const byteCount = values[0];
-  const address = (values[1] << 8) | values[2];
-  const type = values[3];
-  const data = values.slice(4, 4 + byteCount);
-  if (data.length !== byteCount) {
-    throw new Error(`Intel HEX: truncated data (line ${lineNo})`);
-  }
-  return { address, type, data };
 }
 
 module.exports = {

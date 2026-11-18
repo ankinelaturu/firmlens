@@ -11,6 +11,7 @@ const { registerSnapshotCommands } = require('./src/commands');
 const { createStatusBar } = require('./src/status-bar');
 const { registerFirmwareHover } = require('./src/hover');
 const { autoLoadSnapshotIfConfigured } = require('./src/auto-load');
+const { registerHexViewer } = require('./src/hex-viewer/provider');
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -25,6 +26,7 @@ function activate(context) {
 
   registerSnapshotCommands(context, session);
   registerFirmwareHover(context, session);
+  registerHexViewer(session, context);
 
   context.subscriptions.push(statusBar.item);
 
