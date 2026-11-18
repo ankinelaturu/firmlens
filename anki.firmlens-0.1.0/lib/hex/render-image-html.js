@@ -55,7 +55,25 @@ function renderSymbolIndex(intervals) {
         `<span class="sym-type">${escapeHtml(sym.typeLabel)}</span></a></li>`,
     );
   }
-  return `<aside class="sym-index"><h2>Symbols</h2><ol class="sym-list">${items.join('')}</ol></aside>`;
+  const memberItems = intervals
+    .filter((s) => s.name.includes('.'))
+    .map((sym) => {
+      const href = `#${anchorId(sym.start)}`;
+      return (
+        `<li><a class="sym-link" href="${href}">` +
+        `<span class="sym-name">${escapeHtml(sym.name)}</span>` +
+        `<span class="sym-addr">0x${sym.start.toString(16).toUpperCase()}</span></a></li>`
+      );
+    });
+
+  return (
+    `<aside class="sym-index">` +
+    `<h2>Globals</h2><ol class="sym-list">${items.join('')}</ol>` +
+    (memberItems.length
+      ? `<h2 class="sym-sub">Members</h2><ol class="sym-list sym-members">${memberItems.join('')}</ol>`
+      : '') +
+    `</aside>`
+  );
 }
 
 /**

@@ -123,9 +123,18 @@ function symbolsOverlapping(intervals, address, length = 1) {
  * @param {number} address
  */
 function primarySymbolAt(intervals, address) {
-  const hits = symbolsOverlapping(intervals, address, 1);
-  if (hits.length === 0) return null;
-  return hits.sort((a, b) => b.start - a.start || a.name.localeCompare(b.name))[0];
+  /** @type {SymbolInterval | null} */
+  let best = null;
+  let bestSize = Number.POSITIVE_INFINITY;
+  for (const s of intervals) {
+    if (address < s.start || address >= s.end) continue;
+    const size = s.end - s.start;
+    if (size <= bestSize) {
+      best = s;
+      bestSize = size;
+    }
+  }
+  return best;
 }
 
 /**

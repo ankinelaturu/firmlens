@@ -2,6 +2,8 @@
  * @fileoverview Intel HEX record grid HTML fragment.
  */
 
+const { symbolsOverlapping } = require('./symbol-intervals');
+
 /**
  * @param {string} s
  */
@@ -14,13 +16,24 @@ function escapeHtml(s) {
 }
 
 /**
- * @param {import('./hex-view-model').HexViewModel} model
+ * @param {string | null} loadAddr
  */
-function renderRecordsHtml(model) {
+function parseLoadAddr(loadAddr) {
+  if (!loadAddr) return null;
+  const n = parseInt(String(loadAddr).replace(/^0x/i, ''), 16);
+  return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * @param {import('./hex-view-model').HexViewModel} model
+ * @param {import('./symbol-intervals').SymbolInterval[]} [intervals]
+ */
+function renderRecordsHtml(model, intervals = []) {
   const sections = model.sections || [];
   if (sections.length === 0) {
     return '<p class="empty">No Intel HEX records parsed.</p>';
   }
+  const showSym = intervals.length > 0;
   /** @type {string[]} */
   const parts = [];
   for (const section of sections) {
@@ -31,7 +44,9 @@ function renderRecordsHtml(model) {
       <div class="wrap">
         <table class="grid records-grid">
           <thead><tr>
-            <th>Ln</th><th>LL</th><th>ADDR</th><th>TYP</th><th>LOAD</th><th>DATA</th><th>CHK</th>
+            <th>Ln</th><th>LL</th><th>ADDR</th><th>TYP</th><th>LOAD</th>
+            ${showSym ? '<th>Symbols</th>' : ''}
+            <th>DATA</th><th>CHK</th>
           </tr></thead>
           <tbody>`);
     for (const row of rows) {
@@ -42,6 +57,21 @@ function renderRecordsHtml(model) {
           `<span class="byte ${escapeHtml(cell.style || 'default')}">${escapeHtml(cell.text)}</span>`,
         );
       }
+      let symCell = '';
+      if (showSym && row.isData) {
+        const load = parseLoadAddr(row.loadAddr);
+        const len = row.dataCells?.length || 0;
+        if (load != null && len > 0) {
+          const hits = symbolsOverlapping(intervals, load, len);
+          symCell = hits.length
+            ? hits.map((h) => escapeHtml(h.name)).join('<br/>')
+            : '<span class="sym-none">—</span>';
+        } else {
+          symCell = '<span class="sym-none">—</span>';
+        }
+      } else if (showSym) {
+        symCell = '<span class="sym-none">—</span>';
+      }
       parts.push(`
             <tr class="${row.isData ? 'data-row' : ''}">
               <td class="ln">${row.lineNo}</td>
@@ -49,6 +79,7 @@ function renderRecordsHtml(model) {
               <td>${escapeHtml(row.addr)}</td>
               <td>${escapeHtml(row.typ)}<span class="typ-hint">${escapeHtml(row.typLabel)}</span></td>
               <td>${escapeHtml(row.loadAddr || '—')}</td>
+              ${showSym ? `<td class="sym-badge">${symCell}</td>` : ''}
               <td class="data">${bytes.join('')}</td>
               <td class="chk ${row.chkOk ? '' : 'bad'}">${escapeHtml(row.chk)}</td>
             </tr>`);

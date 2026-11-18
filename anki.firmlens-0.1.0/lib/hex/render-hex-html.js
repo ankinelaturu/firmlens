@@ -49,7 +49,7 @@ function renderHexViewerHtml(model, meta) {
   const imageRegions = meta.firmware?.memory ? buildMemoryImage(meta.firmware.memory) : [];
   const limits = meta.limits || { maxStructFields: 32, maxReadBytes: 256 };
 
-  const recordsBody = renderRecordsHtml(model);
+  const recordsBody = renderRecordsHtml(model, intervals);
   const imageBody = renderImageTabHtml(imageRegions, intervals, {
     firmware: meta.firmware,
     limits,
@@ -115,7 +115,9 @@ function renderHexViewerHtml(model, meta) {
       border-collapse: collapse; width: 100%;
       font-variant-numeric: tabular-nums;
     }
-    table.records-grid { min-width: 720px; }
+    table.records-grid { min-width: 820px; }
+    td.sym-badge { font-size: 0.85em; max-width: 14em; line-height: 1.35; color: var(--vscode-symbolIcon-variableForeground, #9cdcfe); }
+    .sym-none { color: #666; }
     table.image-grid { min-width: 900px; }
     table.grid th, table.grid td {
       border-right: 1px solid var(--vscode-panel-border, #444);
@@ -156,6 +158,7 @@ function renderHexViewerHtml(model, meta) {
       max-height: calc(100vh - 140px); overflow-y: auto;
     }
     .sym-index h2 { margin: 0 0 8px; font-size: 0.85em; text-transform: uppercase; color: #999; }
+    .sym-index h2.sym-sub { margin-top: 14px; }
     .sym-list { list-style: none; margin: 0; padding: 0; }
     .sym-list li { margin: 0 0 4px; }
     .sym-link {
