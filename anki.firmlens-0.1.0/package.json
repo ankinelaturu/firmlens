@@ -1,0 +1,58 @@
+{
+  "name": "firmlens",
+  "displayName": "FirmLens",
+  "description": "Hover C variables and see captured firmware snapshot values (Intel HEX + ELF/DWARF).",
+  "version": "0.1.0",
+  "publisher": "anki",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:c"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "firmlens.loadSnapshot",
+        "title": "FirmLens: Load Snapshot"
+      },
+      {
+        "command": "firmlens.clearSnapshot",
+        "title": "FirmLens: Clear Snapshot"
+      }
+    ],
+    "configuration": {
+      "title": "FirmLens",
+      "properties": {
+        "firmlens.sourceRootRemap": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": { "type": "string" },
+              "to": { "type": "string" }
+            }
+          },
+          "description": "Map build-machine path prefixes to local workspace folders."
+        },
+        "firmlens.maxStructFields": {
+          "type": "number",
+          "default": 32,
+          "minimum": 1,
+          "description": "Maximum struct fields shown in a hover preview."
+        },
+        "firmlens.maxReadBytes": {
+          "type": "number",
+          "default": 256,
+          "minimum": 1,
+          "description": "Maximum bytes read for one hover."
+        }
+      }
+    }
+  }
+}

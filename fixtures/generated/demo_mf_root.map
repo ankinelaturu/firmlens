@@ -1,0 +1,27 @@
+Component: ARM Compiler 6.x (synthetic fixture — not a real build log)
+
+==============================================================================
+
+Symbol Names
+
+    Global Symbols
+
+    Symbol Name                              Value     Ov Type        Size  Object(Section)
+
+    demo_direct                              0x20000030   Data           12  demo_mf_root.o(.data.demo_direct)
+    mf_root                                  0x20000020   Data            4  demo_mf_root.o(.data.mf_root)
+
+==============================================================================
+
+Memory Map of the image
+
+    Execution Region ER_RAM (Base: 0x20000000, Size: 0x0000100C, Max: 0x00010000, ABSOLUTE)
+
+    Base Addr    Size         Type   Attr      Idx    E Section Name        Object
+
+    0x20000020   0x00000004   Data   RW         1    .data.mf_root         demo_mf_root.o
+    0x20000030   0x0000000c   Data   RW         2    .data.demo_direct     demo_mf_root.o
+
+    ***** pointee region (snapshot only, not loaded) *****
+
+    Capture at 0x20001000 — mem_file_metadata bytes in demo_mf_root.hex

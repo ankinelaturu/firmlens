@@ -1,0 +1,36 @@
+// @ts-check
+/// <reference types="vscode" />
+
+/**
+ * @fileoverview FirmLens VS Code extension entry (JavaScript, no build step).
+ */
+
+const vscode = require('vscode');
+const { createSessionManager } = require('./src/session');
+const { registerSnapshotCommands } = require('./src/commands');
+const { createStatusBar } = require('./src/status-bar');
+const { registerFirmwareHover } = require('./src/hover');
+
+/**
+ * @param {vscode.ExtensionContext} context
+ */
+function activate(context) {
+  const session = createSessionManager(context);
+  const statusBar = createStatusBar();
+  session.onDidChange(() => {
+    statusBar.update(session.getSummary());
+  });
+  statusBar.update(session.getSummary());
+
+  registerSnapshotCommands(context, session);
+  registerFirmwareHover(context, session);
+
+  context.subscriptions.push(statusBar.item);
+}
+
+function deactivate() {}
+
+module.exports = {
+  activate,
+  deactivate,
+};

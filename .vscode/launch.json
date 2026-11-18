@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run FirmLens",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/anki.firmlens-0.1.0"
+      ],
+      "outFiles": ["${workspaceFolder}/anki.firmlens-0.1.0/**/*.js"]
+    }
+  ]
+}

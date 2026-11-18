@@ -1,0 +1,52 @@
+/** @fileoverview DWARF4 constants used by FirmLens. */
+
+module.exports = {
+  DW_TAG_compile_unit: 0x11,
+  DW_TAG_variable: 0x34,
+  DW_TAG_structure_type: 0x13,
+  DW_TAG_member: 0x0d,
+  DW_TAG_typedef: 0x16,
+  DW_TAG_base_type: 0x24,
+  DW_TAG_pointer_type: 0x0f,
+
+  DW_AT_name: 0x03,
+  DW_AT_location: 0x02,
+  DW_AT_type: 0x49,
+  DW_AT_decl_file: 0x3a,
+  DW_AT_decl_line: 0x3b,
+  DW_AT_byte_size: 0x0b,
+  DW_AT_encoding: 0x0e,
+  DW_AT_data_member_location: 0x38,
+  DW_AT_sibling: 0x01,
+  DW_AT_external: 0x12,
+
+  DW_ATE_unsigned: 0x07,
+  DW_ATE_signed: 0x05,
+  DW_ATE_boolean: 0x02,
+
+  DW_FORM_addr: 0x01,
+  DW_FORM_block2: 0x03,
+  DW_FORM_block4: 0x04,
+  DW_FORM_data2: 0x05,
+  DW_FORM_data4: 0x06,
+  DW_FORM_data8: 0x07,
+  DW_FORM_string: 0x08,
+  DW_FORM_block: 0x09,
+  DW_FORM_block1: 0x0a,
+  DW_FORM_flag: 0x0c,
+  DW_FORM_ref4: 0x13,
+  DW_FORM_ref_udata: 0x12,
+  DW_FORM_sec_offset: 0x17,
+  DW_FORM_exprloc: 0x18,
+  DW_FORM_strp: 0x0e,
+  DW_FORM_udata: 0x0f,
+
+  DW_OP_addr: 0x03,
+
+  DW_ATE: {
+    address: 0x01,
+    boolean: 0x02,
+    signed: 0x05,
+    unsigned: 0x07,
+  },
+};

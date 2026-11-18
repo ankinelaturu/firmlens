@@ -1,0 +1,83 @@
+
+There are no discarded input sections
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+
+.text           0x08000000       0x25
+ *(.text*)
+ .text          0x08000000       0x25 firmware.o
+                0x08000000                _start
+
+.iplt           0x08000025        0x0
+ .iplt          0x08000025        0x0 firmware.o
+
+.rel.dyn        0x08000028        0x0
+ .rel.got       0x08000028        0x0 firmware.o
+ .rel.iplt      0x08000028        0x0 firmware.o
+
+.pointer        0x20000020        0x4
+ *(.pointer)
+ .pointer       0x20000020        0x4 firmware.o
+                0x20000020                mf_root
+
+.count          0x20000024        0x4
+ *(.count)
+ .count         0x20000024        0x4 firmware.o
+                0x20000024                retry_count
+
+.root           0x20001000        0xc
+ *(.root)
+ .root          0x20001000        0xc firmware.o
+                0x20001000                root
+LOAD firmware.o
+OUTPUT(firmware.axf elf32-i386)
+
+.data           0x2000100c        0x0
+ .data          0x2000100c        0x0 firmware.o
+
+.got            0x2000100c        0x0
+ .got           0x2000100c        0x0 firmware.o
+
+.got.plt        0x2000100c        0x0
+ .got.plt       0x2000100c        0x0 firmware.o
+
+.igot.plt       0x2000100c        0x0
+ .igot.plt      0x2000100c        0x0 firmware.o
+
+.bss            0x2000100c        0x0
+ .bss           0x2000100c        0x0 firmware.o
+
+.debug_info     0x00000000       0xca
+ .debug_info    0x00000000       0xca firmware.o
+
+.debug_abbrev   0x00000000       0xa4
+ .debug_abbrev  0x00000000       0xa4 firmware.o
+
+.debug_aranges  0x00000000       0x20
+ .debug_aranges
+                0x00000000       0x20 firmware.o
+
+.debug_line     0x00000000       0x4f
+ .debug_line    0x00000000       0x4f firmware.o
+
+.debug_str      0x00000000       0xf8
+ .debug_str     0x00000000       0xf8 firmware.o
+                                 0xfd (size before relaxing)
+
+.comment        0x00000000       0x2b
+ .comment       0x00000000       0x2b firmware.o
+                                 0x2c (size before relaxing)
+
+.note.GNU-stack
+                0x00000000        0x0
+ .note.GNU-stack
+                0x00000000        0x0 firmware.o
+
+.debug_frame    0x00000000       0x2c
+ .debug_frame   0x00000000       0x2c firmware.o
