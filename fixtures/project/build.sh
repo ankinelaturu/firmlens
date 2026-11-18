@@ -3,6 +3,7 @@ set -eu
 cd "$(dirname "$0")"
 ROOT="$PWD"
 GEN="$(cd ../generated && pwd)"
+REPO_DEPLOY="$(cd ../.. && pwd)/deploy"
 PREFIX="${DEBUG_PREFIX:-/fixture/project}"
 
 if command -v ld.lld >/dev/null 2>&1; then
@@ -60,10 +61,15 @@ cp -f firmware.axf "$GEN/demo_mf_root.axf"
 cp -f firmware.map "$GEN/demo_mf_root.map"
 cp -f ../hex/demo_mf_root_partial.hex "$GEN/demo_mf_root_partial.hex"
 
+mkdir -p "$REPO_DEPLOY"
+cp -f "$GEN/project_snapshot.hex" "$REPO_DEPLOY/snapshot.hex"
+cp -f "$GEN/project.axf" "$REPO_DEPLOY/firmware.axf"
+cp -f "$GEN/project.map" "$REPO_DEPLOY/firmware.map"
+
 rm -f src/*.o
 if [ -f build.hex ]; then
   rm -f build.hex snapshot.hex
 fi
 rm -f firmware.axf firmware.map
 
-echo "Generated linked project in $GEN (project.axf + project_snapshot.hex)"
+echo "Generated linked project in $GEN and $REPO_DEPLOY (snapshot.hex + firmware.axf)"

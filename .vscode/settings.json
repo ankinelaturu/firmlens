@@ -1,0 +1,8 @@
+{
+  "firmlens.sourceRootRemap": [
+    {
+      "from": "/fixture/project",
+      "to": "${workspaceFolder}/fixtures/project"
+    }
+  ]
+}

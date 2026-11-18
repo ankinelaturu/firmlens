@@ -6,6 +6,7 @@ VS Code / Cursor extension: hover C variables and view values from an **Intel HE
 
 ```text
 anki.firmlens-0.1.0/   Extension (JavaScript, no build step)
+deploy/                Standard bundle for auto-load (from `build.sh`)
 fixtures/              Multi-file `project/` + `generated/` HEX/AXF
 docs/                  Architecture, plan, dev setup
 test/                  Node tests (no VS Code required)
@@ -26,9 +27,9 @@ ln -sfn "$PWD/anki.firmlens-0.1.0" ~/.vscode/extensions/anki.firmlens-0.1.0
 ln -sfn "$PWD/anki.firmlens-0.1.0" ~/.cursor/extensions/anki.firmlens-0.1.0
 ```
 
-Reload the window. Command Palette → **FirmLens: Load Snapshot**.
+Reload the window. With the repo open, FirmLens **auto-loads** `deploy/snapshot.hex` + `deploy/firmware.axf` on startup (see [deploy/README.md](deploy/README.md)). Command Palette → **FirmLens: Load Snapshot** for manual picks.
 
-Load **`snapshot.hex`** (runtime capture) + **`firmware.axf`** (optional GNU **`.map`** and **`metadata.json`**), open matching `firmware.c` or C++.  
+Put **`snapshot.hex`**, **`firmware.axf`**, optional **`firmware.map`** and **`metadata.json`** under workspace **`deploy/`** (or **`build/`**), open matching source.  
 Hover **globals/statics**, **`->` / `.` members**, pointers (one-level struct preview), with **local shadowing** suppressed.
 
 If paths differ from build (`/fixture/...`), set **`firmlens.sourceRootRemap`** e.g. `{ "from": "/fixture", "to": "/path/to/fixures-2" }`.  

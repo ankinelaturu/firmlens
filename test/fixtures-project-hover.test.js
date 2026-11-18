@@ -53,10 +53,10 @@ function hover(relFile, line0, col, needle) {
 }
 
 hover('storage.c', findLine('storage.c', 'mf_root'), colOn('storage.c', 'mf_root'), '0x20000020');
-hover('network.c', findLine('network.c', 'g_network'), colOn('network.c', 'g_network'), '**Value:**');
-hover('storage.c', findLine('storage.c', 'mf_root'), colOn('storage.c', 'mf_root'), 'file_count: 3');
-hover('main.c', findLine('main.c', 'mf_root->file_count'), colOn('main.c', 'file_count'), '**Value:** 3');
-hover('board.c', findLine('board.c', 'g_retry_count'), colOn('board.c', 'g_retry_count'), '**Value:** 7');
+hover('network.c', findLine('network.c', 'g_network'), colOn('network.c', 'g_network'), 'Snapshot value ·');
+hover('storage.c', findLine('storage.c', 'mf_root'), colOn('storage.c', 'mf_root'), '| `file_count` |');
+hover('main.c', findLine('main.c', 'mf_root->file_count'), colOn('main.c', 'file_count'), 'Snapshot value · `3`');
+hover('board.c', findLine('board.c', 'g_retry_count'), colOn('board.c', 'g_retry_count'), 'Snapshot value · `7`');
 
 function findLine(file, snippet) {
   const lines = fs.readFileSync(path.join(projectRoot, 'src', file.replace(/^src\//, '')), 'utf8').split(/\n/);

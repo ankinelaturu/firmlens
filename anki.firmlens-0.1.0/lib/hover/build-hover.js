@@ -7,7 +7,8 @@ const { resolveGlobalVariable } = require('../identity/resolve-variable');
 const { localShadowsGlobal, expressionAt } = require('../identity/c-scope');
 const { resolveMember, decodeMemberValue } = require('../identity/resolve-member');
 const { decodeAt } = require('../decode/decode-value');
-const { rangeCoversBytes, provenanceLines } = require('../format/metadata');
+const { rangeCoversBytes } = require('../format/metadata');
+const { formatHoverMarkdown, declHint, code } = require('./format-markdown');
 
 /**
  * @param {object} input
@@ -22,7 +23,7 @@ const { rangeCoversBytes, provenanceLines } = require('../format/metadata');
  * @param {{ maxStructFields: number, maxReadBytes: number }} input.limits
  * @param {import('../format/metadata').SnapshotMetadata | null} [input.metadata]
  * @param {string[]} [input.sessionWarnings]
- * @returns {{ title: string, body: string[], address: string } | { reason: string } | null}
+ * @returns {{ title: string, body: string[], address: string, hoverStart?: number, hoverEnd?: number } | { reason: string, hint?: string } | null}
  */
 function buildFirmwareHover(input) {
   const offset = input.fullText
@@ -39,8 +40,16 @@ function buildFirmwareHover(input) {
     return null;
   }
 
+  const hoverRange =
+    expr.kind === 'member'
+      ? { hoverStart: expr.start, hoverEnd: expr.end }
+      : { hoverStart: expr.start, hoverEnd: expr.end };
+
   if (expr.kind === 'ident' && localShadowsGlobal(input.fullText, input.lineIndex0, input.charIndex, expr.word)) {
-    return { reason: 'Local variable shadows global — snapshot value omitted.' };
+    return {
+      reason: 'Local shadows global',
+      hint: 'Snapshot values apply to file-scope `static` / global symbols only.',
+    };
   }
 
   const identWord = expr.kind === 'member' ? expr.base : expr.word;
@@ -54,13 +63,16 @@ function buildFirmwareHover(input) {
   });
 
   if (!variable) {
-    return reason ? { reason } : null;
+    return reason
+      ? { reason, hint: 'Check `firmlens.sourceRootRemap` or hover the global declaration.' }
+      : null;
   }
 
   const meta = input.metadata ?? null;
   const sessionWarnings = input.sessionWarnings ?? [];
   const addrSize = input.dwarf.addressSize;
   const le = input.dwarf.littleEndian;
+  const hint = declHint(variable);
 
   if (expr.kind === 'member') {
     const mem = resolveMember(
@@ -80,18 +92,25 @@ function buildFirmwareHover(input) {
     const typeName = mem.memberType.typeName || mem.memberType.kind;
     const readLen = mem.memberType.byteSize || 4;
     const fromCapture = rangeCoversBytes(meta?.captureRanges, mem.address, readLen);
-    /** @type {string[]} */
-    const body = [
-      `**${expr.base}${expr.op}${expr.member}** · \`${typeName}\` @ \`${addr}\``,
-      '',
-      `**Value:** ${decoded.summary}`,
-    ];
-    if (decoded.lines.length) {
-      body.push('', ...decoded.lines.map((l) => `- ${l}`));
-    }
-    body.push('', `_Snapshot:_ ${input.snapshotLabel}`);
-    body.push(...provenanceLines(meta, fromCapture, sessionWarnings).map((l) => `_${l}_`));
-    return { title: expr.member, body, address: addr };
+    const title = `${expr.base}${expr.op}${expr.member}`;
+    const body = formatHoverMarkdown({
+      title,
+      typeName,
+      storageAddr: addr,
+      snapshotValue: decoded.summary,
+      decoded,
+      type: mem.memberType,
+      memory: input.memory,
+      readAddress: mem.address,
+      readLen,
+      declHint: hint,
+      memberCaption: `Member of ${code(expr.base)} · base storage ${code(`0x${variable.address.toString(16)}`)}`,
+      snapshotLabel: input.snapshotLabel,
+      metadata: meta,
+      fromCapture,
+      sessionWarnings,
+    });
+    return { title: expr.member, body, address: addr, ...hoverRange };
   }
 
   const decoded = decodeAt(
@@ -107,19 +126,26 @@ function buildFirmwareHover(input) {
   const typeName = variable.type.typeName || variable.type.kind;
   const readLen = variable.type.byteSize || (variable.type.kind === 'pointer' ? (addrSize === 64 ? 8 : 4) : 4);
   const fromCapture = rangeCoversBytes(meta?.captureRanges, variable.address, readLen);
-  /** @type {string[]} */
-  const body = [
-    `**${expr.word}** · \`${typeName}\` @ \`${addr}\``,
-    '',
-    `**Value:** ${decoded.summary}`,
-  ];
-  if (decoded.lines.length) {
-    body.push('', ...decoded.lines.map((l) => `- ${l}`));
-  }
-  body.push('', `_Snapshot:_ ${input.snapshotLabel}`);
-  body.push(...provenanceLines(meta, fromCapture, sessionWarnings).map((l) => `_${l}_`));
+  const scalarRead =
+    variable.type.kind === 'int' || variable.type.kind === 'bool' ? variable.address : undefined;
+  const body = formatHoverMarkdown({
+    title: expr.word,
+    typeName,
+    storageAddr: addr,
+    snapshotValue: decoded.summary,
+    decoded,
+    type: variable.type,
+    memory: input.memory,
+    readAddress: scalarRead,
+    readLen: scalarRead != null ? readLen : undefined,
+    declHint: hint,
+    snapshotLabel: input.snapshotLabel,
+    metadata: meta,
+    fromCapture,
+    sessionWarnings,
+  });
 
-  return { title: expr.word, body, address: addr };
+  return { title: expr.word, body, address: addr, ...hoverRange };
 }
 
 module.exports = {

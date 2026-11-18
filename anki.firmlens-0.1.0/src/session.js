@@ -52,6 +52,70 @@ function createSessionManager(context) {
       active: current !== null,
       label: current ? current.snapshotLabel : 'no session',
     }),
+    /**
+     * @param {{ hexPath: string, axfPath: string, mapPath?: string | null, metadataPath?: string | null }} paths
+     * @param {{ quiet?: boolean }} [options]
+     * @returns {Promise<boolean>}
+     */
+    async loadSnapshotFromPaths(paths, options = {}) {
+      const { hexPath, axfPath } = paths;
+      const mapPath = paths.mapPath ?? null;
+      const metaPath = paths.metadataPath ?? null;
+      const quiet = Boolean(options.quiet);
+
+      try {
+        const validated = validateSnapshotLoad(hexPath, axfPath, mapPath);
+        const memory = loadHexFile(hexPath);
+        const dwarf = loadDwarfIndex(axfPath);
+        const axfSha256 = sha256File(axfPath);
+        /** @type {import('../lib/format/metadata').SnapshotMetadata | null} */
+        const metadata = metaPath ? loadMetadataFile(metaPath) : null;
+        /** @type {string[]} */
+        const sessionWarnings = [...validated.warnings, ...metadataWarnings(metadata, axfSha256)];
+        if (mapPath && validated.map?.kind === 'map-gnu') {
+          const mapSyms = loadGnuMapSymbols(mapPath);
+          sessionWarnings.push(...mapCorroborationWarnings(dwarf, mapSyms));
+        }
+        loadGeneration += 1;
+        /** @type {SnapshotSession} */
+        const next = {
+          loadGeneration,
+          snapshotLabel: path.basename(hexPath),
+          hexPath,
+          axfPath,
+          memory,
+          dwarf,
+          mapPath,
+          metadata,
+          axfSha256,
+          sessionWarnings,
+          loadWarnings: validated.warnings,
+        };
+        current = next;
+        onChangeEmitter.fire();
+        if (!quiet) {
+          let message = `FirmLens: loaded ${next.snapshotLabel} (${dwarf.variables.length} DWARF globals).`;
+          if (validated.warnings.length > 0) {
+            message += ` Note: ${validated.warnings[0]}`;
+            if (validated.warnings.length > 1) {
+              console.warn('[FirmLens] load warnings:', validated.warnings);
+            }
+          }
+          vscode.window.showInformationMessage(message);
+        } else {
+          console.info(`[FirmLens] auto-loaded ${next.snapshotLabel} (${dwarf.variables.length} globals)`);
+        }
+        return true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (!quiet) {
+          vscode.window.showErrorMessage(`FirmLens: load failed — ${message}`);
+        } else {
+          console.warn('[FirmLens] auto-load error:', message);
+        }
+        return false;
+      }
+    },
     /** @returns {Promise<boolean>} */
     async loadSnapshot() {
       const hexUris = await vscode.window.showOpenDialog({
@@ -89,50 +153,15 @@ function createSessionManager(context) {
       const mapPath = mapUris?.[0]?.fsPath ?? null;
       const metaPath = metaUris?.[0]?.fsPath ?? null;
 
-      try {
-        const validated = validateSnapshotLoad(hexPath, axfPath, mapPath);
-        const memory = loadHexFile(hexPath);
-        const dwarf = loadDwarfIndex(axfPath);
-        const axfSha256 = sha256File(axfPath);
-        /** @type {import('../lib/format/metadata').SnapshotMetadata | null} */
-        const metadata = metaPath ? loadMetadataFile(metaPath) : null;
-        /** @type {string[]} */
-        const sessionWarnings = [...validated.warnings, ...metadataWarnings(metadata, axfSha256)];
-        if (mapPath && validated.map?.kind === 'map-gnu') {
-          const mapSyms = loadGnuMapSymbols(mapPath);
-          sessionWarnings.push(...mapCorroborationWarnings(dwarf, mapSyms));
-        }
-        loadGeneration += 1;
-        /** @type {SnapshotSession} */
-        const next = {
-          loadGeneration,
-          snapshotLabel: path.basename(hexPath),
+      return this.loadSnapshotFromPaths(
+        {
           hexPath,
           axfPath,
-          memory,
-          dwarf,
           mapPath,
-          metadata,
-          axfSha256,
-          sessionWarnings,
-          loadWarnings: validated.warnings,
-        };
-        current = next;
-        onChangeEmitter.fire();
-        let message = `FirmLens: loaded ${next.snapshotLabel} (${dwarf.variables.length} DWARF globals).`;
-        if (validated.warnings.length > 0) {
-          message += ` Note: ${validated.warnings[0]}`;
-          if (validated.warnings.length > 1) {
-            console.warn('[FirmLens] load warnings:', validated.warnings);
-          }
-        }
-        vscode.window.showInformationMessage(message);
-        return true;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        vscode.window.showErrorMessage(`FirmLens: load failed — ${message}`);
-        return false;
-      }
+          metadataPath: metaPath,
+        },
+        { quiet: false },
+      );
     },
     clearSnapshot() {
       if (!current) {

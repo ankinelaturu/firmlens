@@ -53,7 +53,8 @@ function registerFirmwareHover(context, session) {
         return null;
       }
       if ('reason' in result) {
-        const md = new vscode.MarkdownString(`**FirmLens:** ${result.reason}`);
+        const { formatReasonMarkdown } = require('../lib/hover/format-markdown');
+        const md = new vscode.MarkdownString(formatReasonMarkdown(result.reason, result.hint).join('\n'));
         return new vscode.Hover(md);
       }
 
@@ -61,7 +62,17 @@ function registerFirmwareHover(context, session) {
       md.isTrusted = false;
       md.supportHtml = false;
       md.appendMarkdown(result.body.join('\n'));
-      const range = document.getWordRangeAtPosition(position, /[A-Za-z_][A-Za-z0-9_]*/);
+      let range;
+      if (result.hoverStart != null && result.hoverEnd != null) {
+        range = new vscode.Range(
+          position.line,
+          result.hoverStart,
+          position.line,
+          result.hoverEnd,
+        );
+      } else {
+        range = document.getWordRangeAtPosition(position, /[A-Za-z_][A-Za-z0-9_]*/);
+      }
       return new vscode.Hover(md, range);
     },
   };

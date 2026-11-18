@@ -42,7 +42,7 @@ const member = buildFirmwareHover({
   limits: { maxStructFields: 32, maxReadBytes: 256 },
 });
 assert.ok(member && !('reason' in member), JSON.stringify(member));
-assert.ok(member.body.join('\n').includes('**Value:** 3'));
+assert.ok(member.body.join('\n').includes('Snapshot value · `3`'));
 
 const shadow = buildFirmwareHover({
   memory,
@@ -56,7 +56,7 @@ const shadow = buildFirmwareHover({
   limits: { maxStructFields: 32, maxReadBytes: 256 },
 });
 assert.ok(shadow && 'reason' in shadow);
-assert.ok(shadow.reason.includes('shadows'));
+assert.ok(shadow.reason.includes('shadow'));
 
 const staticA = `static int duplicate_name = 1;\nvoid a(void) { (void)duplicate_name; }\n`;
 const staticB = `static int duplicate_name = 2;\nvoid b(void) { (void)duplicate_name; }\n`;

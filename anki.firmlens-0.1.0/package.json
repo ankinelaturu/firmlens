@@ -52,6 +52,27 @@
           "default": 256,
           "minimum": 1,
           "description": "Maximum bytes read for one hover."
+        },
+        "firmlens.autoLoadOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "When true, load a snapshot bundle after startup (deploy/ or firmlens.autoLoadPaths)."
+        },
+        "firmlens.deployDirectory": {
+          "type": "string",
+          "default": "deploy",
+          "description": "Folder at workspace root containing snapshot.hex, firmware.axf, and optional firmware.map / metadata.json. Falls back to build/."
+        },
+        "firmlens.autoLoadPaths": {
+          "type": "object",
+          "default": {},
+          "description": "Optional override for HEX/AXF/map/metadata. When empty, FirmLens uses deployDirectory (then build/).",
+          "properties": {
+            "hex": { "type": "string" },
+            "axf": { "type": "string" },
+            "map": { "type": "string" },
+            "metadata": { "type": "string" }
+          }
         }
       }
     }

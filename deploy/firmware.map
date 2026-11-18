@@ -1,0 +1,81 @@
+     VMA      LMA     Size Align Out     In      Symbol
+ 8000000  8000000      168    16 .text
+ 8000000  8000000       33    16         src/board.o:(.text)
+ 8000000  8000000       12     1                 board_read_temp_c
+ 8000020  8000020       13     1                 board_set_voltage_mv
+ 8000040  8000040       1d    16         src/diag_module_a.o:(.text)
+ 8000040  8000040       1d     1                 diag_a_report
+ 8000060  8000060       1d    16         src/diag_module_b.o:(.text)
+ 8000060  8000060       1d     1                 diag_b_report
+ 8000080  8000080       7a    16         src/main.o:(.text)
+ 8000080  8000080       7a     1                 _start
+ 8000100  8000100       32    16         src/network.o:(.text)
+ 8000100  8000100       1d     1                 network_on_rx
+ 8000120  8000120       12     1                 network_on_crc_error
+ 8000140  8000140       28    16         src/storage.o:(.text)
+ 8000140  8000140       28     1                 storage_tick
+20000008 20000008        8     4 .board
+20000008 20000008        8     4         src/board.o:(.board)
+20000008 20000008        8     1                 g_board
+20000010 20000010       10     4 .network
+20000010 20000010       10     4         src/network.o:(.network)
+20000010 20000010       10     1                 g_network
+20000020 20000020        4     4 .pointer
+20000020 20000020        4     4         src/storage.o:(.pointer)
+20000020 20000020        4     1                 mf_root
+20000024 20000024        4     4 .count
+20000024 20000024        4     4         src/board.o:(.count)
+20000024 20000024        4     1                 g_retry_count
+20000028 20000028       10     4 .storage
+20000028 20000028       10     4         src/storage.o:(.storage)
+20000028 20000028       10     1                 g_storage_ring
+20001000 20001000        c     4 .root
+20001000 20001000        c     4         src/storage.o:(.root)
+20001000 20001000        c     1                 g_root
+2000100c 2000100c       10     4 .bss
+2000100c 2000100c        4     4         src/board.o:(.bss)
+2000100c 2000100c        4     1                 board_calibrate_offset
+20001010 20001010        4     4         src/diag_module_a.o:(.bss)
+20001010 20001010        4     1                 diag_sample_count
+20001014 20001014        4     4         src/diag_module_b.o:(.bss)
+20001014 20001014        4     1                 diag_sample_count
+20001018 20001018        4     4         src/main.o:(.bss)
+20001018 20001018        4     1                 main_loop_counter
+       0        0      2a7     1 .debug_abbrev
+       0        0       a1     1         src/board.o:(.debug_abbrev)
+      a1       a1       52     1         src/diag_module_a.o:(.debug_abbrev)
+      f3       f3       52     1         src/diag_module_b.o:(.debug_abbrev)
+     145      145       5f     1         src/main.o:(.debug_abbrev)
+     1a4      1a4       90     1         src/network.o:(.debug_abbrev)
+     234      234       73     1         src/storage.o:(.debug_abbrev)
+       0        0      3d5     1 .debug_info
+       0        0       ee     1         src/board.o:(.debug_info)
+      ee       ee       5f     1         src/diag_module_a.o:(.debug_info)
+     14d      14d       5f     1         src/diag_module_b.o:(.debug_info)
+     1ac      1ac       6a     1         src/main.o:(.debug_info)
+     216      216       c2     1         src/network.o:(.debug_info)
+     2d8      2d8       fd     1         src/storage.o:(.debug_info)
+       0        0      298     1 .debug_str
+       0        0      298     1         <internal>:(.debug_str)
+       0        0       4b     1 .comment
+       0        0       4b     1         <internal>:(.comment)
+       0        0      154     4 .debug_frame
+       0        0       4c     4         src/board.o:(.debug_frame)
+      4c       4c       30     4         src/diag_module_a.o:(.debug_frame)
+      7c       7c       30     4         src/diag_module_b.o:(.debug_frame)
+      ac       ac       2c     4         src/main.o:(.debug_frame)
+      d8       d8       4c     4         src/network.o:(.debug_frame)
+     124      124       30     4         src/storage.o:(.debug_frame)
+       0        0      42d     1 .debug_line
+       0        0       c2     1         src/board.o:(.debug_line)
+      c2       c2       9c     1         src/diag_module_a.o:(.debug_line)
+     15e      15e       9c     1         src/diag_module_b.o:(.debug_line)
+     1fa      1fa       be     1         src/main.o:(.debug_line)
+     2b8      2b8       c0     1         src/network.o:(.debug_line)
+     378      378       b5     1         src/storage.o:(.debug_line)
+       0        0      190     4 .symtab
+       0        0      190     4         <internal>:(.symtab)
+       0        0       9c     1 .shstrtab
+       0        0       9c     1         <internal>:(.shstrtab)
+       0        0      149     1 .strtab
+       0        0      149     1         <internal>:(.strtab)

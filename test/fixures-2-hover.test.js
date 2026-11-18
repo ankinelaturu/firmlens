@@ -33,9 +33,9 @@ function hoverAt(line0, col, needle) {
 }
 
 hoverAt(8, 42, 'root');
-hoverAt(16, 16, '**Value:** 3');
+hoverAt(16, 16, 'Snapshot value · `3`');
 hoverAt(16, 16, '0x20001004');
-hoverAt(10, 39, '**Value:** 7');
+hoverAt(10, 39, 'Snapshot value · `7`');
 hoverAt(9, 45, 'mf_root');
 
 console.log('fixures-2-hover.test.js: OK');

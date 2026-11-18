@@ -10,6 +10,7 @@ const { createSessionManager } = require('./src/session');
 const { registerSnapshotCommands } = require('./src/commands');
 const { createStatusBar } = require('./src/status-bar');
 const { registerFirmwareHover } = require('./src/hover');
+const { autoLoadSnapshotIfConfigured } = require('./src/auto-load');
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -26,6 +27,8 @@ function activate(context) {
   registerFirmwareHover(context, session);
 
   context.subscriptions.push(statusBar.item);
+
+  void autoLoadSnapshotIfConfigured(session);
 }
 
 function deactivate() {}
