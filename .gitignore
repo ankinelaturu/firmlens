@@ -1,5 +1,8 @@
 .DS_Store
 **/.DS_Store
+**/*.o.tmp
+**/*.o
+fixtures/project/src/*.o
 node_modules/
 docs/api/generated/
 fixtures/generated/*.o

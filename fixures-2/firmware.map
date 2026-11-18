@@ -1,83 +1,31 @@
-
-There are no discarded input sections
-
-Memory Configuration
-
-Name             Origin             Length             Attributes
-*default*        0x00000000         0xffffffff
-
-Linker script and memory map
-
-
-.text           0x08000000       0x25
- *(.text*)
- .text          0x08000000       0x25 firmware.o
-                0x08000000                _start
-
-.iplt           0x08000025        0x0
- .iplt          0x08000025        0x0 firmware.o
-
-.rel.dyn        0x08000028        0x0
- .rel.got       0x08000028        0x0 firmware.o
- .rel.iplt      0x08000028        0x0 firmware.o
-
-.pointer        0x20000020        0x4
- *(.pointer)
- .pointer       0x20000020        0x4 firmware.o
-                0x20000020                mf_root
-
-.count          0x20000024        0x4
- *(.count)
- .count         0x20000024        0x4 firmware.o
-                0x20000024                retry_count
-
-.root           0x20001000        0xc
- *(.root)
- .root          0x20001000        0xc firmware.o
-                0x20001000                root
-LOAD firmware.o
-OUTPUT(firmware.axf elf32-i386)
-
-.data           0x2000100c        0x0
- .data          0x2000100c        0x0 firmware.o
-
-.got            0x2000100c        0x0
- .got           0x2000100c        0x0 firmware.o
-
-.got.plt        0x2000100c        0x0
- .got.plt       0x2000100c        0x0 firmware.o
-
-.igot.plt       0x2000100c        0x0
- .igot.plt      0x2000100c        0x0 firmware.o
-
-.bss            0x2000100c        0x0
- .bss           0x2000100c        0x0 firmware.o
-
-.debug_info     0x00000000       0xca
- .debug_info    0x00000000       0xca firmware.o
-
-.debug_abbrev   0x00000000       0xa4
- .debug_abbrev  0x00000000       0xa4 firmware.o
-
-.debug_aranges  0x00000000       0x20
- .debug_aranges
-                0x00000000       0x20 firmware.o
-
-.debug_line     0x00000000       0x4f
- .debug_line    0x00000000       0x4f firmware.o
-
-.debug_str      0x00000000       0xf8
- .debug_str     0x00000000       0xf8 firmware.o
-                                 0xfd (size before relaxing)
-
-.comment        0x00000000       0x2b
- .comment       0x00000000       0x2b firmware.o
-                                 0x2c (size before relaxing)
-
-.note.GNU-stack
-                0x00000000        0x0
- .note.GNU-stack
-                0x00000000        0x0 firmware.o
-
-.debug_frame    0x00000000       0x2c
- .debug_frame   0x00000000       0x2c firmware.o
+     VMA      LMA     Size Align Out     In      Symbol
+ 8000000  8000000       29    16 .text
+ 8000000  8000000       29    16         firmware.o:(.text)
+ 8000000  8000000       29     1                 _start
+20000020 20000020        4     4 .pointer
+20000020 20000020        4     4         firmware.o:(.pointer)
+20000020 20000020        4     1                 mf_root
+20000024 20000024        4     4 .count
+20000024 20000024        4     4         firmware.o:(.count)
+20000024 20000024        4     1                 retry_count
+20001000 20001000        c     4 .root
+20001000 20001000        c     4         firmware.o:(.root)
+20001000 20001000        c     1                 root
+       0        0       82     1 .debug_abbrev
+       0        0       82     1         firmware.o:(.debug_abbrev)
+       0        0       cc     1 .debug_info
+       0        0       cc     1         firmware.o:(.debug_info)
+       0        0       88     1 .debug_str
+       0        0       88     1         <internal>:(.debug_str)
+       0        0       3b     1 .comment
+       0        0       3b     1         <internal>:(.comment)
+       0        0       2c     4 .debug_frame
+       0        0       2c     4         firmware.o:(.debug_frame)
+       0        0       55     1 .debug_line
+       0        0       55     1         firmware.o:(.debug_line)
+       0        0       60     4 .symtab
+       0        0       60     4         <internal>:(.symtab)
+       0        0       7e     1 .shstrtab
+       0        0       7e     1         <internal>:(.shstrtab)
+       0        0       2c     1 .strtab
+       0        0       2c     1         <internal>:(.strtab)

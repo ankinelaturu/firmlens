@@ -2,23 +2,40 @@
 
 Synthetic public inputs for demos and tests (no customer dumps).
 
+## Multi-file project (primary)
+
 | Path | Description |
 | --- | --- |
-| `c/demo_mf_root_sections.c` | Source for DWARF demo (`mf_root`, `demo_direct`) |
-| `link/demo_mf_root.ld` | Linker script: `mf_root` @ `0x20000020`, `demo_direct` @ `0x20000030` |
-| `hex/demo_mf_root.hex` | Full pointee (9 bytes @ `0x20001000`) |
-| `hex/demo_mf_root_partial.hex` | Only 8 bytes at pointee (`initialized` unavailable) |
-| `map/demo_mf_root.map` | Synthetic Keil-style map for address corroboration |
-| `generated/` | Outputs from `build-fixtures.sh` (committed `.axf` may be unlinked ELF) |
+| `project/src/` | Multi-module C sources (`storage`, `board`, `network`, `diag`, `main`) |
+| `project/link/project.ld` | RAM layout: `mf_root` @ `0x20000020`, `g_root` @ `0x20001000`, … |
+| `generated/project.axf` | **Linked** ELF32 i386 + DWARF 4 (hover-ready) |
+| `generated/project_snapshot.hex` | Post-init capture |
+| `generated/project.map` | GNU map for corroboration |
 
-## Regenerate
+Build (macOS: `brew install lld llvm`):
 
 ```bash
-./fixtures/build-fixtures.sh
+./fixtures/project/build.sh
 ```
 
-With `arm-none-eabi-gcc` installed, `generated/demo_mf_root.axf` is a linked ELF with runtime addresses in DWARF. Without it, the script emits an **unlinked** `elf32-littlearm` object with debug info (sufficient for early DWARF parser work).
+FirmLens: load `project_snapshot.hex` + `project.axf`, open `project/src/*.c`, remap:
 
-## Spec crosswalk
+```json
+[{ "from": "/fixture/project", "to": "<repo>/fixtures/project" }]
+```
 
-Matches [docs/firmlens-idea.md](../docs/firmlens-idea.md): pointer `0x20000020` → `0x20001000`, struct bytes `01 00 00 00 03 00 00 00 01`.
+Legacy names `demo_mf_root.*` in `generated/` are copies of the project build for older docs.
+
+## Smaller single-file sources (reference only)
+
+| Path | Description |
+| --- | --- |
+| `c/demo_mf_root_sections.c` | Minimal 2-symbol source (superseded by `project/`) |
+| `c/demo_mf_root.c` | Narrative readme example — use `project/src/storage.c` for DWARF paths |
+| `hex/demo_mf_root_partial.hex` | Partial pointee (8 bytes; `initialized` unavailable) |
+
+## Test
+
+```bash
+node --test test/fixtures-project-hover.test.js
+```

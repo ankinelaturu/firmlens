@@ -59,9 +59,9 @@ function readAttribute(buf, off, form, addrSize, debugStr, littleEndian) {
     }
     case C.DW_FORM_string: {
       let end = p;
-      while (buf[end] !== 0) end += 1;
+      while (end < buf.length && buf[end] !== 0) end += 1;
       const s = buf.toString('utf8', p, end);
-      return { value: s, next: end + 1 };
+      return { value: s, next: Math.min(end + 1, buf.length) };
     }
     case C.DW_FORM_strp:
       return { value: readStrp(buf, p, u32, debugStr), next: p + 4 };
@@ -107,8 +107,11 @@ function readStrp(buf, off, u32, debugStr) {
   if (!debugStr) {
     return `strp:${rel}`;
   }
+  if (rel < 0 || rel >= debugStr.length) {
+    return `strp:${rel}`;
+  }
   let end = rel;
-  while (debugStr[end] !== 0) end += 1;
+  while (end < debugStr.length && debugStr[end] !== 0) end += 1;
   return debugStr.toString('utf8', rel, end);
 }
 

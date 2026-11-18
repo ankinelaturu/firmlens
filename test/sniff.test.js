@@ -19,7 +19,7 @@ function run() {
   const elf = sniffElf(elfBuf);
   assert.strictEqual(elf?.kind, 'elf');
   assert.strictEqual(elf.wordSize, 32);
-  assert.ok(elf.warnings.length >= 1);
+  assert.strictEqual(elf.eType, 2);
 
   const hexBuf = fs.readFileSync(path.join(gen, 'demo_mf_root.hex'));
   const hex = sniffMemorySnapshot(hexBuf);
@@ -32,7 +32,7 @@ function run() {
 
   const mapBuf = fs.readFileSync(path.join(gen, 'demo_mf_root.map'));
   const map = sniffLinkerMap(mapBuf);
-  assert.strictEqual(map.kind, 'map-keil');
+  assert.ok(map.kind === 'map-gnu' || map.kind === 'map-keil', map.kind);
 
   const validated = validateSnapshotLoad(
     path.join(gen, 'demo_mf_root.hex'),

@@ -189,7 +189,11 @@ function sniffLinkerMap(buffer) {
     return { kind: 'map-keil', warnings: [] };
   }
 
-  if (/Linker script and memory map/i.test(head) || /Memory Configuration/i.test(head)) {
+  if (
+    /Linker script and memory map/i.test(head) ||
+    /Memory Configuration/i.test(head) ||
+    /\bVMA\b.*\bLMA\b.*\bOut\b/i.test(head)
+  ) {
     return { kind: 'map-gnu', warnings: [] };
   }
 

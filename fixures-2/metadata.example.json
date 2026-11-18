@@ -1,8 +1,14 @@
 {
   "buildId": "fixures-2-synthetic",
-  "axfSha256": "ac0ebc269733d3a71111a012b0f7ef0a0429dd6a001d5309a1a4136c59c1d417",
+  "axfSha256": "188cfed431b921ead52f25dcdd6b66dd14fb911901634f3d49c4133cd7714a24",
   "captureRanges": [
-    { "start": 536870912, "end": 536870944 },
-    { "start": 536875008, "end": 536875015 }
+    {
+      "start": 536870912,
+      "end": 536870944
+    },
+    {
+      "start": 536875008,
+      "end": 536875015
+    }
   ]
 }

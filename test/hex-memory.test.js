@@ -11,7 +11,7 @@ const fixtureHex = path.join(__dirname, '../fixtures/generated/demo_mf_root.hex'
 function run() {
   const mem = loadHexFile(fixtureHex);
   assert.strictEqual(mem.hasByte(0x20000020), true);
-  assert.strictEqual(mem.hasByte(0x20000024), false);
+  assert.strictEqual(mem.hasByte(0x20000024), true);
 
   const ptr = mem.read(0x20000020, 4);
   assert.ok(ptr.available.every(Boolean));

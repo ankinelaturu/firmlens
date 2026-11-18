@@ -74,7 +74,11 @@ function loadElfSections(filePath) {
     const shOffset = wordSize === 32 ? u32(base + 16) : Number(u64(base + 24));
     const shSize = wordSize === 32 ? u32(base + 20) : Number(u64(base + 32));
     let nameEnd = shstrOff + shName;
-    while (buf[nameEnd] !== 0) nameEnd += 1;
+    const shstrEnd = Math.min(shstrOff + shstrSize, buf.length);
+    while (nameEnd < shstrEnd && buf[nameEnd] !== 0) nameEnd += 1;
+    if (nameEnd >= shstrEnd) {
+      continue;
+    }
     const name = buf.toString('utf8', shstrOff + shName, nameEnd);
     if (!name || shSize === 0) {
       continue;

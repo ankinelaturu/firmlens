@@ -39,6 +39,8 @@ const C = require('./constants');
  */
 function loadDwarfIndex(elfPath) {
   const elf = loadElfSections(elfPath);
+  /** @type {number} */
+  let cuIndex = 0;
   const abbrevBuf = elf.sections.get('.debug_abbrev');
   const info = elf.sections.get('.debug_info');
   const debugStr = elf.sections.get('.debug_str');
@@ -64,14 +66,35 @@ function loadDwarfIndex(elfPath) {
     const dieStart = cuOff + 11;
     const dieEnd = cuOff + 4 + unitLength;
     const abbrevs = parseAbbrevAt(abbrevBuf, debugAbbrevOff);
-    walkDies(info, dieStart, dieEnd, abbrevs, debugAbbrevOff, addrSize, debugStr, elf.littleEndian, dies, variables, cuOff, null);
+    const afterWalk = walkDies(
+      info,
+      dieStart,
+      dieEnd,
+      abbrevs,
+      debugAbbrevOff,
+      addrSize,
+      debugStr,
+      elf.littleEndian,
+      dies,
+      variables,
+      cuOff,
+      null,
+    );
+    if (afterWalk < dieStart) {
+      throw new Error('DWARF walk did not advance');
+    }
     cuOff = dieEnd;
+    cuIndex += 1;
+    if (cuIndex > 32) {
+      throw new Error('Too many compile units');
+    }
   }
 
   const ptrSize = elf.wordSize === 64 ? 8 : 4;
   for (const v of variables) {
-    v.type = resolveType(v._typeRefOff, dies, ptrSize);
+    const typeOff = v._typeRefOff;
     delete v._typeRefOff;
+    v.type = typeOff != null ? resolveType(typeOff, dies, ptrSize) : { kind: 'unknown' };
   }
 
   return {
@@ -116,8 +139,13 @@ function loadDwarfIndex(elfPath) {
  */
 function walkDies(info, p, end, abbrevs, abbrevOffset, addrSize, debugStr, le, dies, variables, cuRefBase, parentStructOff) {
   // cuRefBase = offset of compile unit length field (start of CU header)
+  let guard = 0;
   while (p < end) {
     const dieOff = p;
+    guard += 1;
+    if (guard > 5000) {
+      throw new Error(`DWARF DIE walk exceeded limit at offset ${dieOff} (end ${end})`);
+    }
     const { value: abbrevCode, next } = readUleb128(info, p);
     p = next;
     if (abbrevCode === 0) {
@@ -168,7 +196,12 @@ function walkDies(info, p, end, abbrevs, abbrevOffset, addrSize, debugStr, le, d
 
     if (spec.tag === C.DW_TAG_variable && attrs[C.DW_AT_name]) {
       const loc = attrs[C.DW_AT_location];
-      const addr = locationFromBlock(loc, addrSize, le);
+      let addr = null;
+      if (typeof loc === 'number') {
+        addr = loc >>> 0;
+      } else {
+        addr = locationFromBlock(loc, addrSize, le);
+      }
       if (addr != null) {
         const typeRef = attrs[C.DW_AT_type];
         variables.push({
@@ -196,13 +229,18 @@ function walkDies(info, p, end, abbrevs, abbrevOffset, addrSize, debugStr, le, d
  * @param {number} [pointerByteSize]
  * @returns {TypeRef}
  */
-function resolveType(off, dies, pointerByteSize = 4) {
+/**
+ * @param {Set<number>} [_seen]
+ */
+function resolveType(off, dies, pointerByteSize = 4, _seen = new Set()) {
   if (off == null) return { kind: 'unknown' };
+  if (_seen.has(off)) return { kind: 'unknown' };
+  _seen.add(off);
   const die = dies.get(off);
   if (!die) return { kind: 'unknown' };
 
   if (die.tag === C.DW_TAG_typedef) {
-    const inner = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize);
+    const inner = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize, _seen);
     return { ...inner, typeName: die.attrs[C.DW_AT_name] || inner.typeName };
   }
 
@@ -222,7 +260,7 @@ function resolveType(off, dies, pointerByteSize = 4) {
   }
 
   if (die.tag === C.DW_TAG_pointer_type) {
-    const pointee = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize);
+    const pointee = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize, _seen);
     return {
       kind: 'pointer',
       byteSize: pointerByteSize,
@@ -235,7 +273,7 @@ function resolveType(off, dies, pointerByteSize = 4) {
     const members = (die.members || []).map((m) => ({
       name: m.name,
       offset: m.offset,
-      type: resolveType(m.typeRef, dies, pointerByteSize),
+      type: resolveType(m.typeRef, dies, pointerByteSize, _seen),
     }));
     const size = die.attrs[C.DW_AT_byte_size] || 0;
     return {
@@ -269,8 +307,7 @@ function parseAbbrevAt(abbrev, offset) {
     const { value: code, next } = readUleb128(abbrev, p);
     p = next;
     if (code === 0) {
-      p += 1;
-      continue;
+      break;
     }
     const { value: tag, next: t1 } = readUleb128(abbrev, p);
     p = t1;

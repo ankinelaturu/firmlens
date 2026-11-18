@@ -40,6 +40,14 @@ function decodeAt(memory, address, type, littleEndian, limits, addressSize = 32)
  */
 function decodeType(memory, address, type, le, limits, lines, depth, addressSize = 32) {
   if (!type || type.kind === 'unknown') {
+  const guess = type?.byteSize || 4;
+  if (guess > 0 && guess <= 8) {
+      const r = memory.read(address, guess);
+      if (r.available.every(Boolean)) {
+        const n = readInt(r.bytes, guess, le, false);
+        return typeof n === 'bigint' ? `${n}n` : String(n);
+      }
+    }
     return 'unavailable (type)';
   }
   if (type.kind === 'int') {

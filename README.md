@@ -6,7 +6,7 @@ VS Code / Cursor extension: hover C variables and view values from an **Intel HE
 
 ```text
 anki.firmlens-0.1.0/   Extension (JavaScript, no build step)
-fixtures/              Synthetic HEX, MAP, AXF sources
+fixtures/              Multi-file `project/` + `generated/` HEX/AXF
 docs/                  Architecture, plan, dev setup
 test/                  Node tests (no VS Code required)
 ```
@@ -54,10 +54,10 @@ node --test test/*.test.js
 ## Fixtures
 
 ```bash
-./fixtures/build-fixtures.sh
+./fixtures/project/build.sh   # requires clang + ld.lld (brew install lld llvm on macOS)
 ```
 
-See [fixtures/README.md](fixtures/README.md).
+See [fixtures/README.md](fixtures/README.md) and [fixtures/project/README.md](fixtures/project/README.md).
 
 ## Development
 
