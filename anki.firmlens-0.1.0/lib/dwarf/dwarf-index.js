@@ -68,8 +68,9 @@ function loadDwarfIndex(elfPath) {
     cuOff = dieEnd;
   }
 
+  const ptrSize = elf.wordSize === 64 ? 8 : 4;
   for (const v of variables) {
-    v.type = resolveType(v._typeRefOff, dies);
+    v.type = resolveType(v._typeRefOff, dies, ptrSize);
     delete v._typeRefOff;
   }
 
@@ -192,15 +193,16 @@ function walkDies(info, p, end, abbrevs, abbrevOffset, addrSize, debugStr, le, d
 /**
  * @param {number|null|undefined} off
  * @param {Map<number, Die>} dies
+ * @param {number} [pointerByteSize]
  * @returns {TypeRef}
  */
-function resolveType(off, dies) {
+function resolveType(off, dies, pointerByteSize = 4) {
   if (off == null) return { kind: 'unknown' };
   const die = dies.get(off);
   if (!die) return { kind: 'unknown' };
 
   if (die.tag === C.DW_TAG_typedef) {
-    const inner = resolveType(die.attrs[C.DW_AT_type], dies);
+    const inner = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize);
     return { ...inner, typeName: die.attrs[C.DW_AT_name] || inner.typeName };
   }
 
@@ -220,15 +222,20 @@ function resolveType(off, dies) {
   }
 
   if (die.tag === C.DW_TAG_pointer_type) {
-    const pointee = resolveType(die.attrs[C.DW_AT_type], dies);
-    return { kind: 'pointer', byteSize: 4, pointee, typeName: `${pointee.typeName || 'void'}*` };
+    const pointee = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize);
+    return {
+      kind: 'pointer',
+      byteSize: pointerByteSize,
+      pointee,
+      typeName: `${pointee.typeName || 'void'}*`,
+    };
   }
 
   if (die.tag === C.DW_TAG_structure_type) {
     const members = (die.members || []).map((m) => ({
       name: m.name,
       offset: m.offset,
-      type: resolveType(m.typeRef, dies),
+      type: resolveType(m.typeRef, dies, pointerByteSize),
     }));
     const size = die.attrs[C.DW_AT_byte_size] || 0;
     return {

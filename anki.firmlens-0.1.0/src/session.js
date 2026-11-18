@@ -7,6 +7,8 @@ const path = require('path');
 const { loadHexFile } = require('../lib/hex/hex-memory');
 const { validateSnapshotLoad } = require('../lib/format/validate-load');
 const { loadDwarfIndex } = require('../lib/dwarf/dwarf-index');
+const { loadMetadataFile, sha256File, metadataWarnings } = require('../lib/format/metadata');
+const { loadGnuMapSymbols, mapCorroborationWarnings } = require('../lib/format/map-symbols');
 
 /**
  * @typedef {object} SnapshotSession
@@ -18,6 +20,9 @@ const { loadDwarfIndex } = require('../lib/dwarf/dwarf-index');
  * @property {import('../lib/hex/hex-memory').HexMemory} memory Parsed sparse snapshot.
  * @property {import('../lib/dwarf/dwarf-index').DwarfIndex} dwarf DWARF index from debug image.
  * @property {string | null} mapPath Optional MAP path if user selected one.
+ * @property {import('../lib/format/metadata').SnapshotMetadata | null} metadata Optional sidecar JSON.
+ * @property {string | null} axfSha256 SHA-256 of loaded AXF.
+ * @property {string[]} sessionWarnings Corroboration / metadata warnings shown in hovers.
  */
 
 /**
@@ -73,14 +78,30 @@ function createSessionManager(context) {
         filters: { 'Linker map': ['map'], 'All': ['*'] },
       });
 
+      const metaUris = await vscode.window.showOpenDialog({
+        canSelectMany: false,
+        openLabel: 'Optional metadata JSON (skip to continue)',
+        filters: { JSON: ['json'], All: ['*'] },
+      });
+
       const hexPath = hexUris[0].fsPath;
       const axfPath = axfUris[0].fsPath;
       const mapPath = mapUris?.[0]?.fsPath ?? null;
+      const metaPath = metaUris?.[0]?.fsPath ?? null;
 
       try {
         const validated = validateSnapshotLoad(hexPath, axfPath, mapPath);
         const memory = loadHexFile(hexPath);
         const dwarf = loadDwarfIndex(axfPath);
+        const axfSha256 = sha256File(axfPath);
+        /** @type {import('../lib/format/metadata').SnapshotMetadata | null} */
+        const metadata = metaPath ? loadMetadataFile(metaPath) : null;
+        /** @type {string[]} */
+        const sessionWarnings = [...validated.warnings, ...metadataWarnings(metadata, axfSha256)];
+        if (mapPath && validated.map?.kind === 'map-gnu') {
+          const mapSyms = loadGnuMapSymbols(mapPath);
+          sessionWarnings.push(...mapCorroborationWarnings(dwarf, mapSyms));
+        }
         loadGeneration += 1;
         /** @type {SnapshotSession} */
         const next = {
@@ -91,6 +112,9 @@ function createSessionManager(context) {
           memory,
           dwarf,
           mapPath,
+          metadata,
+          axfSha256,
+          sessionWarnings,
           loadWarnings: validated.warnings,
         };
         current = next;

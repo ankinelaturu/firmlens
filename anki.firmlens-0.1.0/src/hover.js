@@ -45,6 +45,8 @@ function registerFirmwareHover(context, session) {
         charIndex: position.character,
         remaps: /** @type {{from:string,to:string}[]} */ (remaps),
         limits,
+        metadata: active.metadata ?? null,
+        sessionWarnings: active.sessionWarnings ?? [],
       });
 
       if (!result) {
@@ -64,9 +66,8 @@ function registerFirmwareHover(context, session) {
     },
   };
 
-  context.subscriptions.push(
-    vscode.languages.registerHoverProvider({ language: 'c', scheme: 'file' }, provider),
-  );
+  const selector = [{ language: 'c', scheme: 'file' }, { language: 'cpp', scheme: 'file' }];
+  context.subscriptions.push(vscode.languages.registerHoverProvider(selector, provider));
 }
 
 module.exports = {

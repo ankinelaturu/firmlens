@@ -1,10 +1,13 @@
 /**
- * @fileoverview Build hover markdown for a resolved global variable.
+ * @fileoverview Build hover markdown for a resolved global variable or member.
  */
 
-const { isInCommentOrString, wordAt } = require('../identity/c-scan');
+const { isInCommentOrString } = require('../identity/c-scan');
 const { resolveGlobalVariable } = require('../identity/resolve-variable');
+const { localShadowsGlobal, expressionAt } = require('../identity/c-scope');
+const { resolveMember, decodeMemberValue } = require('../identity/resolve-member');
 const { decodeAt } = require('../decode/decode-value');
+const { rangeCoversBytes, provenanceLines } = require('../format/metadata');
 
 /**
  * @param {object} input
@@ -17,6 +20,8 @@ const { decodeAt } = require('../decode/decode-value');
  * @param {number} input.charIndex
  * @param {{from:string,to:string}[]} input.remaps
  * @param {{ maxStructFields: number, maxReadBytes: number }} input.limits
+ * @param {import('../format/metadata').SnapshotMetadata | null} [input.metadata]
+ * @param {string[]} [input.sessionWarnings]
  * @returns {{ title: string, body: string[], address: string } | { reason: string } | null}
  */
 function buildFirmwareHover(input) {
@@ -29,15 +34,21 @@ function buildFirmwareHover(input) {
   }
 
   const line = input.fullText.split(/\r?\n/)[input.lineIndex0] ?? '';
-  const hit = wordAt(line, input.charIndex);
-  if (!hit) {
+  const expr = expressionAt(line, input.charIndex);
+  if (!expr) {
     return null;
   }
 
+  if (expr.kind === 'ident' && localShadowsGlobal(input.fullText, input.lineIndex0, input.charIndex, expr.word)) {
+    return { reason: 'Local variable shadows global — snapshot value omitted.' };
+  }
+
+  const identWord = expr.kind === 'member' ? expr.base : expr.word;
   const { variable, reason } = resolveGlobalVariable({
     editorPath: input.editorPath,
     line1Based: input.lineIndex0 + 1,
-    word: hit.word,
+    word: identWord,
+    fullText: input.fullText,
     dwarf: input.dwarf,
     remaps: input.remaps,
   });
@@ -46,28 +57,69 @@ function buildFirmwareHover(input) {
     return reason ? { reason } : null;
   }
 
+  const meta = input.metadata ?? null;
+  const sessionWarnings = input.sessionWarnings ?? [];
+  const addrSize = input.dwarf.addressSize;
+  const le = input.dwarf.littleEndian;
+
+  if (expr.kind === 'member') {
+    const mem = resolveMember(
+      input.memory,
+      variable,
+      expr.member,
+      expr.op,
+      le,
+      addrSize,
+      input.limits,
+    );
+    if ('reason' in mem) {
+      return { reason: mem.reason };
+    }
+    const decoded = decodeMemberValue(input.memory, mem.address, mem.memberType, le, input.limits);
+    const addr = `0x${mem.address.toString(16)}`;
+    const typeName = mem.memberType.typeName || mem.memberType.kind;
+    const readLen = mem.memberType.byteSize || 4;
+    const fromCapture = rangeCoversBytes(meta?.captureRanges, mem.address, readLen);
+    /** @type {string[]} */
+    const body = [
+      `**${expr.base}${expr.op}${expr.member}** · \`${typeName}\` @ \`${addr}\``,
+      '',
+      `**Value:** ${decoded.summary}`,
+    ];
+    if (decoded.lines.length) {
+      body.push('', ...decoded.lines.map((l) => `- ${l}`));
+    }
+    body.push('', `_Snapshot:_ ${input.snapshotLabel}`);
+    body.push(...provenanceLines(meta, fromCapture, sessionWarnings).map((l) => `_${l}_`));
+    return { title: expr.member, body, address: addr };
+  }
+
   const decoded = decodeAt(
     input.memory,
     variable.address,
     variable.type,
-    input.dwarf.littleEndian,
+    le,
     input.limits,
+    addrSize,
   );
 
   const addr = `0x${variable.address.toString(16)}`;
   const typeName = variable.type.typeName || variable.type.kind;
+  const readLen = variable.type.byteSize || (variable.type.kind === 'pointer' ? (addrSize === 64 ? 8 : 4) : 4);
+  const fromCapture = rangeCoversBytes(meta?.captureRanges, variable.address, readLen);
   /** @type {string[]} */
   const body = [
-    `**${hit.word}** · \`${typeName}\` @ \`${addr}\``,
+    `**${expr.word}** · \`${typeName}\` @ \`${addr}\``,
     '',
     `**Value:** ${decoded.summary}`,
   ];
   if (decoded.lines.length) {
     body.push('', ...decoded.lines.map((l) => `- ${l}`));
   }
-  body.push('', `_Snapshot:_ ${input.snapshotLabel}`, '_Provenance: user-selected pairing._');
+  body.push('', `_Snapshot:_ ${input.snapshotLabel}`);
+  body.push(...provenanceLines(meta, fromCapture, sessionWarnings).map((l) => `_${l}_`));
 
-  return { title: hit.word, body, address: addr };
+  return { title: expr.word, body, address: addr };
 }
 
 module.exports = {

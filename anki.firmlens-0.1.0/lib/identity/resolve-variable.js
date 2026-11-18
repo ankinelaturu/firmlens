@@ -9,12 +9,13 @@ const { dwarfPathMatchesEditor, basename } = require('../dwarf/dwarf-index');
  * @param {string} opts.editorPath
  * @param {number} opts.line1Based
  * @param {string} opts.word
+ * @param {string} [opts.fullText] Document text for declaration line hints.
  * @param {import('../dwarf/dwarf-index').DwarfIndex} opts.dwarf
  * @param {{from:string,to:string}[]} opts.remaps
  * @returns {{variable: import('../dwarf/dwarf-index').DwarfVariable | null, reason?: string}}
  */
 function resolveGlobalVariable(opts) {
-  const { editorPath, line1Based, word, dwarf, remaps } = opts;
+  const { editorPath, line1Based, word, dwarf, remaps, fullText } = opts;
   const hits = dwarf.byName(word);
   if (hits.length === 0) {
     return { variable: null, reason: 'No DWARF global with this name.' };
@@ -32,6 +33,21 @@ function resolveGlobalVariable(opts) {
 
   if (pool.length === 1) {
     return { variable: pool[0] };
+  }
+
+  if (fullText) {
+    const { findGlobalDeclLine } = require('./c-scope');
+    const declLine = findGlobalDeclLine(fullText, word, line1Based);
+    if (declLine > 0) {
+      const byDecl = pool.filter((v) => v.declLine === declLine);
+      if (byDecl.length === 1) {
+        return { variable: byDecl[0] };
+      }
+      const exact = dwarf.byDecl(editorPath, declLine, word);
+      if (exact && pool.some((v) => v.address === exact.address)) {
+        return { variable: exact };
+      }
+    }
   }
 
   const byLine = pool.filter((v) => v.declLine === line1Based);

@@ -19,12 +19,13 @@
  * @param {TypeRef} type
  * @param {boolean} littleEndian
  * @param {{ maxStructFields: number, maxReadBytes: number }} limits
+ * @param {32|64} [addressSize]
  * @returns {DecodedValue}
  */
-function decodeAt(memory, address, type, littleEndian, limits) {
+function decodeAt(memory, address, type, littleEndian, limits, addressSize = 32) {
   /** @type {string[]} */
   const lines = [];
-  const summary = decodeType(memory, address, type, littleEndian, limits, lines, 0);
+  const summary = decodeType(memory, address, type, littleEndian, limits, lines, 0, addressSize);
   return { summary, lines };
 }
 
@@ -37,7 +38,7 @@ function decodeAt(memory, address, type, littleEndian, limits) {
  * @param {string[]} lines
  * @param {number} depth
  */
-function decodeType(memory, address, type, le, limits, lines, depth) {
+function decodeType(memory, address, type, le, limits, lines, depth, addressSize = 32) {
   if (!type || type.kind === 'unknown') {
     return 'unavailable (type)';
   }
@@ -48,7 +49,7 @@ function decodeType(memory, address, type, le, limits, lines, depth) {
       return 'unavailable (bytes)';
     }
     const n = readInt(r.bytes, size, le, Boolean(type.signed));
-    return String(n);
+    return typeof n === 'bigint' ? `${n}n` : String(n);
   }
   if (type.kind === 'bool') {
     const r = memory.read(address, 1);
@@ -58,7 +59,7 @@ function decodeType(memory, address, type, le, limits, lines, depth) {
     return String(v);
   }
   if (type.kind === 'pointer') {
-    const size = type.byteSize || 4;
+    const size = type.byteSize || (addressSize === 64 ? 8 : 4);
     const r = memory.read(address, size);
     if (!r.available.every(Boolean)) {
       return 'unavailable (bytes)';
@@ -73,11 +74,11 @@ function decodeType(memory, address, type, le, limits, lines, depth) {
     }
     lines.push(`address: ${ptrHex}`);
     lines.push('pointee:');
-    decodeStructOrScalar(memory, ptr, type.pointee, le, limits, lines, depth + 1);
+    decodeStructOrScalar(memory, ptr, type.pointee, le, limits, lines, depth + 1, addressSize);
     return ptrHex;
   }
   if (type.kind === 'struct') {
-    decodeStructOrScalar(memory, address, type, le, limits, lines, depth);
+    decodeStructOrScalar(memory, address, type, le, limits, lines, depth, addressSize);
     return type.typeName || 'struct';
   }
   return '?';
@@ -92,9 +93,9 @@ function decodeType(memory, address, type, le, limits, lines, depth) {
  * @param {string[]} lines
  * @param {number} depth
  */
-function decodeStructOrScalar(memory, address, type, le, limits, lines, depth) {
+function decodeStructOrScalar(memory, address, type, le, limits, lines, depth, addressSize = 32) {
   if (type.kind !== 'struct' || !type.members) {
-    lines.push(decodeType(memory, address, type, le, limits, lines, depth));
+    lines.push(decodeType(memory, address, type, le, limits, lines, depth, addressSize));
     return;
   }
   let count = 0;
@@ -104,7 +105,7 @@ function decodeStructOrScalar(memory, address, type, le, limits, lines, depth) {
       break;
     }
     const fieldAddr = address + m.offset;
-    const val = decodeType(memory, fieldAddr, m.type, le, limits, lines, depth + 1);
+    const val = decodeType(memory, fieldAddr, m.type, le, limits, lines, depth + 1, addressSize);
     if (val === 'unavailable (bytes)') {
       lines.push(`${m.name}: unavailable`);
     } else {
@@ -121,20 +122,27 @@ function decodeStructOrScalar(memory, address, type, le, limits, lines, depth) {
  * @param {boolean} signed
  */
 function readInt(bytes, size, le, signed) {
+  if (size === 8) {
+    let v = 0n;
+    if (le) {
+      for (let i = 0; i < 8; i += 1) v |= BigInt(bytes[i]) << BigInt(8 * i);
+    } else {
+      for (let i = 0; i < 8; i += 1) v = (v << 8n) | BigInt(bytes[i]);
+    }
+    if (signed) return BigInt.asIntN(64, v);
+    return v;
+  }
   let v = 0;
   if (le) {
     for (let i = 0; i < size; i += 1) v |= bytes[i] << (8 * i);
   } else {
     for (let i = 0; i < size; i += 1) v = (v << 8) | bytes[i];
   }
-  if (signed && size <= 4) {
+  if (signed) {
     const top = 1 << (size * 8 - 1);
     if (v & top) v -= 1 << (size * 8);
   }
-  if (size === 8 && signed) {
-    return BigInt.asIntN(64, BigInt(v));
-  }
-  return v >>> 0 === v ? v : v;
+  return v >>> 0;
 }
 
 module.exports = {

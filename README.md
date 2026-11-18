@@ -28,18 +28,28 @@ ln -sfn "$PWD/anki.firmlens-0.1.0" ~/.cursor/extensions/anki.firmlens-0.1.0
 
 Reload the window. Command Palette → **FirmLens: Load Snapshot**.
 
-Load **`snapshot.hex`** (runtime capture) + **`firmware.axf`**, open matching `firmware.c`.  
-If paths differ from build (`/fixture/...`), set **`firmlens.sourceRootRemap`** e.g. `{ "from": "/fixture", "to": "/path/to/fixures-2" }`.
+Load **`snapshot.hex`** (runtime capture) + **`firmware.axf`** (optional GNU **`.map`** and **`metadata.json`**), open matching `firmware.c` or C++.  
+Hover **globals/statics**, **`->` / `.` members**, pointers (one-level struct preview), with **local shadowing** suppressed.
+
+If paths differ from build (`/fixture/...`), set **`firmlens.sourceRootRemap`** e.g. `{ "from": "/fixture", "to": "/path/to/fixures-2" }`.  
+Metadata schema: [docs/metadata-sidecar.md](docs/metadata-sidecar.md) (`fixures-2/metadata.example.json`).
 
 Details: [docs/dev-setup.md](docs/dev-setup.md).
 
 ## Test HEX parser
 
 ```bash
-node test/hex-memory.test.js
-node test/sniff.test.js
-node test/fixures-2-hover.test.js
+node --test test/*.test.js
 ```
+
+### Verified debug formats
+
+| Variant | Status |
+| --- | --- |
+| Intel HEX (linear + segment) | tested (`test/hex-memory.test.js`) |
+| ELF32 i386 DWARF 4 (synthetic `fixures-2/`) | tested (`test/fixures-2-hover.test.js`) |
+| GNU ld `.map` symbol corroboration | tested (`test/metadata-map.test.js`) |
+| Keil ARM AXF | **not verified in CI** — use repo fixtures until you validate your build |
 
 ## Fixtures
 
