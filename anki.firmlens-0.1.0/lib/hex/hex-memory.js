@@ -17,6 +17,7 @@ const { decodeRecordLine } = require('./record-decode');
  * @property {() => number} byteCount Number of defined bytes stored.
  * @property {(address: number) => boolean} hasByte
  * @property {(address: number, length: number) => HexReadResult} read
+ * @property {() => number[]} definedAddresses Sorted defined byte addresses.
  */
 
 /**
@@ -103,6 +104,7 @@ function parseIntelHex(text) {
       }
       return { bytes: out, available };
     },
+    definedAddresses: () => [...bytes.keys()].sort((a, b) => a - b),
   };
 }
 

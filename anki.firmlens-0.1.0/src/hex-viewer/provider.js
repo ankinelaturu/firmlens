@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { buildHexViewModel } = require('../../lib/hex/hex-view-model');
 const { renderHexViewerHtml } = require('../../lib/hex/render-hex-html');
+const { resolveHexFirmware } = require('../../lib/hex/resolve-hex-firmware');
 
 const VIEW_TYPE = 'firmlens.hexViewer';
 
@@ -48,10 +49,12 @@ function renderDocument(hexPath, session) {
   const cur = session.getSession();
   const sessionActive =
     Boolean(cur?.hexPath) && path.resolve(cur.hexPath) === path.resolve(hexPath);
+  const firmware = resolveHexFirmware(hexPath, session);
   const html = renderHexViewerHtml(model, {
     fileName: path.basename(hexPath),
     sessionActive,
     bundle: bundleHintsForHex(hexPath),
+    firmware,
   });
   const rowCount = model.sections.reduce((n, s) => n + s.rows.length, 0);
   outputChannel?.appendLine(
