@@ -3,6 +3,9 @@
  */
 
 const { gutterLabel } = require('./symbol-intervals');
+const { symbolByteStyle, symbolGutterStyle } = require('./symbol-color');
+const { symbolAtAddress, tooltipForByte } = require('./viewer-decode');
+const { byteColorClass } = require('./record-decode');
 
 /**
  * @param {string} s
@@ -13,6 +16,13 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/**
+ * @param {string} s
+ */
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/\r?\n/g, '&#10;');
 }
 
 /**
@@ -29,12 +39,18 @@ function renderSymbolIndex(intervals) {
   if (!intervals.length) {
     return '<p class="sym-empty">No DWARF globals (load firmware.axf or FirmLens session).</p>';
   }
+  const seen = new Set();
   /** @type {string[]} */
   const items = [];
   for (const sym of intervals) {
+    if (sym.name.includes('.')) continue;
+    if (seen.has(sym.start)) continue;
+    seen.add(sym.start);
     const href = `#${anchorId(sym.start)}`;
+    const style = symbolGutterStyle(sym.name);
     items.push(
-      `<li><a class="sym-link" href="${href}"><span class="sym-name">${escapeHtml(sym.name)}</span>` +
+      `<li style="${escapeAttr(style)}"><a class="sym-link" href="${href}">` +
+        `<span class="sym-name">${escapeHtml(sym.name)}</span>` +
         `<span class="sym-addr">0x${sym.start.toString(16).toUpperCase()}</span>` +
         `<span class="sym-type">${escapeHtml(sym.typeLabel)}</span></a></li>`,
     );
@@ -45,11 +61,17 @@ function renderSymbolIndex(intervals) {
 /**
  * @param {import('./memory-image').ImageRegion[]} regions
  * @param {import('./symbol-intervals').SymbolInterval[]} intervals
+ * @param {{
+ *   firmware?: import('./resolve-hex-firmware').HexFirmwareContext | null;
+ *   limits: { maxStructFields: number; maxReadBytes: number };
+ * }} ctx
  */
-function renderImageMap(regions, intervals) {
+function renderImageMap(regions, intervals, ctx) {
   if (!regions.length) {
     return '<p class="empty">No captured bytes in snapshot.</p>';
   }
+  const fw = ctx.firmware;
+  const axfPath = fw?.axfPath || '';
   /** @type {string[]} */
   const parts = [];
   for (const region of regions) {
@@ -66,19 +88,34 @@ function renderImageMap(regions, intervals) {
             <tbody>`);
     for (const row of region.rows) {
       const gut = gutterLabel(intervals, row.address);
-      const anchor =
-        gut.kind === 'start' ? ` id="${anchorId(row.address)}"` : '';
+      const anchor = gut.kind === 'start' ? ` id="${anchorId(row.address)}"` : '';
       const gutterClass =
         gut.kind === 'start' ? 'gutter sym-start' : gut.kind === 'cont' ? 'gutter sym-cont' : 'gutter';
+      const gutterStyle = gut.kind !== 'empty' && gut.text ? symbolGutterStyle(gut.text.replace(/^│\s*/, '')) : '';
       /** @type {string[]} */
       const cells = [];
       for (const b of row.bytes) {
-        const cls = b.available ? `byte ${escapeHtml(b.style)}` : 'byte gap';
-        cells.push(`<td class="byte-cell"><span class="${cls}">${escapeHtml(b.text)}</span></td>`);
+        const sym = b.available ? symbolAtAddress(intervals, b.address) : null;
+        let cls = b.available ? `byte ${byteColorClass(parseInt(b.text, 16))}` : 'byte gap';
+        let extraStyle = '';
+        let tip = '';
+        if (sym && b.available) {
+          cls = 'byte sym-mapped';
+          extraStyle = symbolByteStyle(sym.name);
+          if (fw?.memory && fw?.dwarf && axfPath) {
+            tip = tooltipForByte(fw.memory, fw.dwarf, sym, b.address, ctx.limits, axfPath);
+          } else {
+            tip = sym.name;
+          }
+        }
+        const tipAttr = tip ? ` title="${escapeAttr(tip)}"` : '';
+        cells.push(
+          `<td class="byte-cell"><span class="${cls}" style="${escapeAttr(extraStyle)}"${tipAttr}>${escapeHtml(b.text)}</span></td>`,
+        );
       }
       parts.push(`
             <tr class="image-row"${anchor}>
-              <td class="${gutterClass}">${escapeHtml(gut.text)}</td>
+              <td class="${gutterClass}" style="${escapeAttr(gutterStyle)}">${escapeHtml(gut.text)}</td>
               <td class="addr-cell">${escapeHtml(row.addressText)}</td>
               ${cells.join('')}
             </tr>`);
@@ -95,13 +132,14 @@ function renderImageMap(regions, intervals) {
 /**
  * @param {import('./memory-image').ImageRegion[]} regions
  * @param {import('./symbol-intervals').SymbolInterval[]} intervals
+ * @param {object} ctx
  */
-function renderImageTabHtml(regions, intervals) {
+function renderImageTabHtml(regions, intervals, ctx) {
   return `
   <div class="image-layout">
     ${renderSymbolIndex(intervals)}
     <div class="image-map">
-      ${renderImageMap(regions, intervals)}
+      ${renderImageMap(regions, intervals, ctx)}
     </div>
   </div>`;
 }

@@ -50,11 +50,16 @@ function renderDocument(hexPath, session) {
   const sessionActive =
     Boolean(cur?.hexPath) && path.resolve(cur.hexPath) === path.resolve(hexPath);
   const firmware = resolveHexFirmware(hexPath, session);
+  const config = vscode.workspace.getConfiguration('firmlens');
   const html = renderHexViewerHtml(model, {
     fileName: path.basename(hexPath),
     sessionActive,
     bundle: bundleHintsForHex(hexPath),
     firmware,
+    limits: {
+      maxStructFields: config.get('maxStructFields', 32),
+      maxReadBytes: config.get('maxReadBytes', 256),
+    },
   });
   const rowCount = model.sections.reduce((n, s) => n + s.rows.length, 0);
   outputChannel?.appendLine(

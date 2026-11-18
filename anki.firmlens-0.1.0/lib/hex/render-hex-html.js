@@ -4,7 +4,7 @@
 
 const { renderRecordsHtml } = require('./render-records-html');
 const { renderImageTabHtml } = require('./render-image-html');
-const { buildGlobalIntervals } = require('./symbol-intervals');
+const { buildAllIntervals } = require('./symbol-intervals');
 const { buildMemoryImage } = require('./memory-image');
 
 /**
@@ -38,16 +38,22 @@ function countDataRows(sections) {
  *   sessionActive?: boolean;
  *   bundle?: { axf?: string; map?: string };
  *   firmware?: import('./resolve-hex-firmware').HexFirmwareContext | null;
+ *   limits?: { maxStructFields: number; maxReadBytes: number };
+ *   tooltipScriptUri?: string;
  * }} meta
  */
 function renderHexViewerHtml(model, meta) {
   const sections = model.sections || [];
   const dataRows = countDataRows(sections);
-  const intervals = meta.firmware?.dwarf ? buildGlobalIntervals(meta.firmware.dwarf) : [];
+  const intervals = meta.firmware?.dwarf ? buildAllIntervals(meta.firmware.dwarf) : [];
   const imageRegions = meta.firmware?.memory ? buildMemoryImage(meta.firmware.memory) : [];
+  const limits = meta.limits || { maxStructFields: 32, maxReadBytes: 256 };
 
   const recordsBody = renderRecordsHtml(model);
-  const imageBody = renderImageTabHtml(imageRegions, intervals);
+  const imageBody = renderImageTabHtml(imageRegions, intervals, {
+    firmware: meta.firmware,
+    limits,
+  });
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -167,6 +173,8 @@ function renderHexViewerHtml(model, meta) {
     .addr-col, .addr-cell { font-size: 0.9em; white-space: nowrap; }
     td.byte-cell { text-align: center; padding: 2px; }
     .data-hdr { text-align: left; padding-left: 8px; }
+    .byte.sym-mapped { color: var(--vscode-editor-foreground, #eee); border-radius: 2px; }
+    .gap { background: repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(128,128,128,0.12) 3px, rgba(128,128,128,0.12) 6px); }
   </style>
 </head>
 <body>

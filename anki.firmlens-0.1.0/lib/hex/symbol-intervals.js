@@ -73,6 +73,33 @@ function buildGlobalIntervals(dwarf) {
 }
 
 /**
+ * Globals plus flattened struct members.
+ * @param {DwarfIndex | null} dwarf
+ * @returns {SymbolInterval[]}
+ */
+function buildAllIntervals(dwarf) {
+  if (!dwarf?.variables?.length) return [];
+  const out = buildGlobalIntervals(dwarf);
+  /** @type {SymbolInterval[]} */
+  const members = [];
+  for (const v of dwarf.variables) {
+    if (v.type?.kind !== 'struct' || !v.type.members?.length) continue;
+    for (const m of v.type.members) {
+      const sz = typeByteSize(m.type);
+      members.push({
+        name: `${v.name}.${m.name}`,
+        start: v.address + m.offset,
+        end: v.address + m.offset + sz,
+        typeLabel: m.type.typeName || m.type.kind,
+        declLine: v.declLine,
+        declFile: v.declFile,
+      });
+    }
+  }
+  return [...out, ...members].sort((a, b) => a.start - b.start || a.name.localeCompare(b.name));
+}
+
+/**
  * Intervals that overlap [address, address+length).
  * @param {SymbolInterval[]} intervals
  * @param {number} address
@@ -115,6 +142,7 @@ function gutterLabel(intervals, rowStart) {
 
 module.exports = {
   buildGlobalIntervals,
+  buildAllIntervals,
   symbolsOverlapping,
   primarySymbolAt,
   gutterLabel,
