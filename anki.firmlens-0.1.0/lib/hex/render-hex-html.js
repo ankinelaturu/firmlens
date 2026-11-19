@@ -39,7 +39,7 @@ function countDataRows(sections) {
  *   bundle?: { axf?: string; map?: string };
  *   firmware?: import('./resolve-hex-firmware').HexFirmwareContext | null;
  *   limits?: { maxStructFields: number; maxReadBytes: number };
- *   tooltipScriptUri?: string;
+ *   recordsScriptUri?: string;
  * }} meta
  */
 function renderHexViewerHtml(model, meta) {
@@ -115,7 +115,40 @@ function renderHexViewerHtml(model, meta) {
       border-collapse: collapse; width: 100%;
       font-variant-numeric: tabular-nums;
     }
-    table.records-grid { min-width: 820px; }
+    .records-wrap { overflow-x: auto; padding: 0 0 12px; }
+    table.records-grid {
+      min-width: 820px;
+      table-layout: fixed;
+    }
+    table.records-grid .col-ln { width: 2.5em; }
+    table.records-grid .col-ll { width: 2.5em; }
+    table.records-grid .col-addr { width: 3.5em; }
+    table.records-grid .col-typ { width: 3.5em; }
+    table.records-grid .col-load { width: 6.5em; }
+    table.records-grid .col-sym { width: 8em; }
+    table.records-grid .col-data { width: auto; }
+    table.records-grid .col-chk { width: 2.5em; }
+    tr.section-band td {
+      padding: 0;
+      border-bottom: 1px solid var(--vscode-panel-border, #444);
+    }
+    .band-toggle {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; margin: 0; padding: 10px 14px;
+      border: none; cursor: pointer; text-align: left;
+      font: inherit; color: inherit;
+      background: var(--vscode-editor-inactiveSelectionBackground, #2a2a2a);
+    }
+    .band-toggle:hover { background: var(--vscode-list-hoverBackground, #333); }
+    tr.band-linear .band-toggle { background: rgba(0, 122, 204, 0.12); }
+    tr.band-segment .band-toggle { background: rgba(180, 120, 0, 0.12); }
+    tr.band-eof .band-toggle {
+      background: rgba(140, 80, 160, 0.15);
+      color: var(--vscode-foreground, #ccc);
+    }
+    .band-title { font-weight: 600; }
+  .chev { width: 1em; opacity: 0.85; flex-shrink: 0; }
+    tbody.records-section[data-open="false"] tr.records-data { display: none; }
     td.sym-badge { font-size: 0.85em; max-width: 14em; line-height: 1.35; color: var(--vscode-symbolIcon-variableForeground, #9cdcfe); }
     .sym-none { color: #666; }
     table.image-grid { min-width: 900px; }
@@ -209,6 +242,7 @@ function renderHexViewerHtml(model, meta) {
     <div class="tab-panel" id="panel-image">${imageBody}</div>
     <div class="tab-panel" id="panel-records">${recordsBody}</div>
   </div>
+  ${meta.recordsScriptUri ? `<script src="${meta.recordsScriptUri}"></script>` : ''}
 </body>
 </html>`;
 }

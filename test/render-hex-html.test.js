@@ -27,7 +27,8 @@ const html = renderHexViewerHtml(model, {
 
 assert.ok(html.includes('records-grid') || html.includes('image-grid'), 'table present');
 assert.ok(html.includes('data-row'), 'data rows present');
-assert.match(html, /<tr class="data-row">/);
+assert.match(html, /records-data data-row/);
+assert.ok((html.match(/records-wrap/g) || []).length >= 1, 'single records table wrap');
 assert.ok((html.match(/<tr /g) || []).length >= 50, 'expected many table rows');
 
 console.log('render-hex-html.test.js: OK');

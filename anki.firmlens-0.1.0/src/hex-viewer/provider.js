@@ -43,7 +43,23 @@ function bundleHintsForHex(hexPath) {
  * @param {string} hexPath
  * @param {ReturnType<typeof import('../session').createSessionManager>} session
  */
-function renderDocument(hexPath, session) {
+/**
+ * @param {vscode.Webview} webview
+ * @param {vscode.Uri} extensionUri
+ */
+function recordsScriptUri(webview, extensionUri) {
+  return webview.asWebviewUri(
+    vscode.Uri.joinPath(extensionUri, 'media', 'hex-viewer', 'records-collapse.js'),
+  ).toString();
+}
+
+/**
+ * @param {string} hexPath
+ * @param {ReturnType<typeof import('../session').createSessionManager>} session
+ * @param {vscode.Webview | null} webview
+ * @param {vscode.Uri | null} extensionUri
+ */
+function renderDocument(hexPath, session, webview, extensionUri) {
   const text = fs.readFileSync(hexPath, 'utf8');
   const model = buildHexViewModel(text);
   const cur = session.getSession();
@@ -60,6 +76,8 @@ function renderDocument(hexPath, session) {
       maxStructFields: config.get('maxStructFields', 32),
       maxReadBytes: config.get('maxReadBytes', 256),
     },
+    recordsScriptUri:
+      webview && extensionUri ? recordsScriptUri(webview, extensionUri) : undefined,
   });
   const rowCount = model.sections.reduce((n, s) => n + s.rows.length, 0);
   outputChannel?.appendLine(
@@ -96,12 +114,20 @@ function registerHexViewer(session, context) {
       outputChannel?.appendLine(`[hex viewer] open ${hexPath}`);
 
       webviewPanel.webview.options = {
-        enableScripts: false,
+        enableScripts: true,
+        localResourceRoots: [
+          vscode.Uri.joinPath(context.extensionUri, 'media'),
+        ],
       };
 
       const refresh = () => {
         try {
-          webviewPanel.webview.html = renderDocument(hexPath, session);
+          webviewPanel.webview.html = renderDocument(
+            hexPath,
+            session,
+            webviewPanel.webview,
+            context.extensionUri,
+          );
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           outputChannel?.appendLine(`[hex viewer] error: ${message}`);
