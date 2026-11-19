@@ -232,11 +232,11 @@ function renderHexViewerHtml(model, meta) {
     ${model.warnings?.length ? `<div class="warn">${model.warnings.length} parse warning(s): ${escapeHtml(model.warnings[0])}</div>` : ''}
   </div>
 
-  <input class="tab-radios" type="radio" name="fl-tab" id="tab-image" checked />
-  <input class="tab-radios" type="radio" name="fl-tab" id="tab-records" />
+  <input class="tab-radios" type="radio" name="fl-tab" id="tab-records" checked />
+  <input class="tab-radios" type="radio" name="fl-tab" id="tab-image" />
   <div class="tab-labels">
-    <label for="tab-image">Image (symbols)</label>
     <label for="tab-records">HEX records</label>
+    <label for="tab-image">Image (symbols)</label>
   </div>
   <div class="tab-panels">
     <div class="tab-panel" id="panel-image">${imageBody}</div>
