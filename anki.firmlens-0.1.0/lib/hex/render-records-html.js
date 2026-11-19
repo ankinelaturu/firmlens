@@ -2,7 +2,8 @@
  * @fileoverview Intel HEX record grid — single table with collapsible section bands.
  */
 
-const { symbolsOverlapping } = require('./symbol-intervals');
+const { symbolAtAddress, tooltipForByte } = require('./viewer-decode');
+const { symbolByteStyle } = require('./symbol-color');
 
 /**
  * @param {string} s
@@ -13,6 +14,13 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/**
+ * @param {string} s
+ */
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/\r?\n/g, '&#10;');
 }
 
 /**
@@ -37,33 +45,61 @@ function bandClass(section) {
 }
 
 /**
- * @param {import('./hex-view-model').HexViewRecordRow} row
- * @param {boolean} showSym
- * @param {import('./symbol-intervals').SymbolInterval[]} intervals
+ * @typedef {object} RecordsRenderCtx
+ * @property {import('./symbol-intervals').SymbolInterval[]} intervals
+ * @property {import('./resolve-hex-firmware').HexFirmwareContext | null} [firmware]
+ * @property {{ maxStructFields: number; maxReadBytes: number }} limits
+ * @property {Map<string, number>} [hueMap]
  */
-function renderRecordRow(row, showSym, intervals) {
+
+/**
+ * @param {import('./hex-view-model').HexViewRecordRow} row
+ * @param {RecordsRenderCtx} ctx
+ */
+function renderDataBytes(row, ctx) {
+  const load = parseLoadAddr(row.loadAddr);
+  const { intervals, firmware, limits, hueMap } = ctx;
+  const axfPath = firmware?.axfPath || '';
+  const canDecode = Boolean(firmware?.memory && firmware?.dwarf && axfPath && intervals.length);
+
   /** @type {string[]} */
-  const bytes = [];
-  for (const cell of row.dataCells || []) {
-    bytes.push(
-      `<span class="byte ${escapeHtml(cell.style || 'default')}">${escapeHtml(cell.text)}</span>`,
-    );
-  }
-  let symCell = '';
-  if (showSym && row.isData) {
-    const load = parseLoadAddr(row.loadAddr);
-    const len = row.dataCells?.length || 0;
-    if (load != null && len > 0) {
-      const hits = symbolsOverlapping(intervals, load, len);
-      symCell = hits.length
-        ? hits.map((h) => escapeHtml(h.name)).join('<br/>')
-        : '<span class="sym-none">—</span>';
-    } else {
-      symCell = '<span class="sym-none">—</span>';
+  const parts = [];
+  const cells = row.dataCells || [];
+  for (let i = 0; i < cells.length; i += 1) {
+    const cell = cells[i];
+    const addr = load != null ? load + i : null;
+    let cls = `byte ${escapeHtml(cell.style || 'default')}`;
+    let style = '';
+    let title = '';
+    if (canDecode && addr != null) {
+      const sym = symbolAtAddress(intervals, addr);
+      if (sym) {
+        cls = 'byte sym-mapped';
+        style = symbolByteStyle(sym.name, hueMap);
+        title = tooltipForByte(firmware.memory, firmware.dwarf, sym, addr, limits, axfPath);
+      }
     }
-  } else if (showSym) {
-    symCell = '<span class="sym-none">—</span>';
+    const tip = title ? ` data-fl-tip="${escapeAttr(title)}"` : '';
+    const styleAttr = style ? ` style="${escapeAttr(style)}"` : '';
+    parts.push(`<span class="${cls}"${styleAttr}${tip}>${escapeHtml(cell.text)}</span>`);
   }
+  return parts.join('');
+}
+
+/**
+ * @param {import('./hex-view-model').HexViewRecordRow} row
+ * @param {RecordsRenderCtx} ctx
+ */
+function renderRecordRow(row, ctx) {
+  const dataHtml = row.isData
+    ? renderDataBytes(row, ctx)
+    : (row.dataCells || [])
+        .map(
+          (cell) =>
+            `<span class="byte ${escapeHtml(cell.style || 'default')}">${escapeHtml(cell.text)}</span>`,
+        )
+        .join('');
+
   return `
       <tr class="records-data${row.isData ? ' data-row' : ''}">
         <td class="ln">${row.lineNo}</td>
@@ -71,23 +107,26 @@ function renderRecordRow(row, showSym, intervals) {
         <td>${escapeHtml(row.addr)}</td>
         <td>${escapeHtml(row.typ)}<span class="typ-hint">${escapeHtml(row.typLabel)}</span></td>
         <td>${escapeHtml(row.loadAddr || '—')}</td>
-        ${showSym ? `<td class="sym-badge">${symCell}</td>` : ''}
-        <td class="data">${bytes.join('')}</td>
+        <td class="data">${dataHtml}</td>
         <td class="chk ${row.chkOk ? '' : 'bad'}">${escapeHtml(row.chk)}</td>
       </tr>`;
 }
 
 /**
  * @param {import('./hex-view-model').HexViewModel} model
- * @param {import('./symbol-intervals').SymbolInterval[]} [intervals]
+ * @param {RecordsRenderCtx} [ctx]
  */
-function renderRecordsHtml(model, intervals = []) {
+function renderRecordsHtml(model, ctx) {
   const sections = model.sections || [];
   if (sections.length === 0) {
     return '<p class="empty">No Intel HEX records parsed.</p>';
   }
-  const showSym = intervals.length > 0;
-  const colCount = showSym ? 8 : 7;
+  const renderCtx = ctx || {
+    intervals: [],
+    firmware: null,
+    limits: { maxStructFields: 32, maxReadBytes: 256 },
+  };
+  const colCount = 7;
 
   /** @type {string[]} */
   const bodies = [];
@@ -106,7 +145,7 @@ function renderRecordsHtml(model, intervals = []) {
         </td>
       </tr>`);
     for (const row of rows) {
-      bodies.push(renderRecordRow(row, showSym, intervals));
+      bodies.push(renderRecordRow(row, renderCtx));
     }
     bodies.push('    </tbody>');
   }
@@ -120,14 +159,12 @@ function renderRecordsHtml(model, intervals = []) {
         <col class="col-addr" />
         <col class="col-typ" />
         <col class="col-load" />
-        ${showSym ? '<col class="col-sym" />' : ''}
         <col class="col-data" />
         <col class="col-chk" />
       </colgroup>
       <thead>
         <tr>
           <th>Ln</th><th>LL</th><th>ADDR</th><th>TYP</th><th>LOAD</th>
-          ${showSym ? '<th>Symbols</th>' : ''}
           <th>DATA</th><th>CHK</th>
         </tr>
       </thead>

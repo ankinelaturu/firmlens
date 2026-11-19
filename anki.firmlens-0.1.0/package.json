@@ -2,7 +2,7 @@
   "name": "firmlens",
   "displayName": "FirmLens",
   "description": "Hover C variables and see captured firmware snapshot values (Intel HEX + ELF/DWARF).",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "anki",
   "license": "MIT",
   "engines": {

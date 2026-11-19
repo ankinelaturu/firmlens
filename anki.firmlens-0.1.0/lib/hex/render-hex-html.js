@@ -6,6 +6,7 @@ const { renderRecordsHtml } = require('./render-records-html');
 const { renderImageTabHtml } = require('./render-image-html');
 const { buildAllIntervals } = require('./symbol-intervals');
 const { buildMemoryImage } = require('./memory-image');
+const { buildSymbolHueMap } = require('./symbol-color');
 
 /**
  * @param {string} s
@@ -40,19 +41,27 @@ function countDataRows(sections) {
  *   firmware?: import('./resolve-hex-firmware').HexFirmwareContext | null;
  *   limits?: { maxStructFields: number; maxReadBytes: number };
  *   recordsScriptUri?: string;
+ *   tooltipScriptUri?: string;
  * }} meta
  */
 function renderHexViewerHtml(model, meta) {
   const sections = model.sections || [];
   const dataRows = countDataRows(sections);
   const intervals = meta.firmware?.dwarf ? buildAllIntervals(meta.firmware.dwarf) : [];
+  const hueMap = buildSymbolHueMap(intervals);
   const imageRegions = meta.firmware?.memory ? buildMemoryImage(meta.firmware.memory) : [];
   const limits = meta.limits || { maxStructFields: 32, maxReadBytes: 256 };
 
-  const recordsBody = renderRecordsHtml(model, intervals);
+  const recordsBody = renderRecordsHtml(model, {
+    intervals,
+    firmware: meta.firmware ?? null,
+    limits,
+    hueMap,
+  });
   const imageBody = renderImageTabHtml(imageRegions, intervals, {
     firmware: meta.firmware,
     limits,
+    hueMap,
   });
 
   return `<!DOCTYPE html>
@@ -125,8 +134,15 @@ function renderHexViewerHtml(model, meta) {
     table.records-grid .col-addr { width: 3.5em; }
     table.records-grid .col-typ { width: 3.5em; }
     table.records-grid .col-load { width: 6.5em; }
-    table.records-grid .col-sym { width: 8em; }
     table.records-grid .col-data { width: auto; }
+    table.records-grid .data .byte.sym-mapped {
+      color: var(--vscode-editor-foreground, #eee);
+      box-shadow: none;
+      border-right-color: transparent;
+    }
+    table.records-grid .data .byte.sym-mapped + .byte.sym-mapped {
+      border-right-color: transparent;
+    }
     table.records-grid .col-chk { width: 2.5em; }
     tr.section-band td {
       padding: 0;
@@ -149,8 +165,6 @@ function renderHexViewerHtml(model, meta) {
     .band-title { font-weight: 600; }
   .chev { width: 1em; opacity: 0.85; flex-shrink: 0; }
     tbody.records-section[data-open="false"] tr.records-data { display: none; }
-    td.sym-badge { font-size: 0.85em; max-width: 14em; line-height: 1.35; color: var(--vscode-symbolIcon-variableForeground, #9cdcfe); }
-    .sym-none { color: #666; }
     table.image-grid { min-width: 900px; }
     table.grid th, table.grid td {
       border-right: 1px solid var(--vscode-panel-border, #444);
@@ -209,8 +223,28 @@ function renderHexViewerHtml(model, meta) {
     .addr-col, .addr-cell { font-size: 0.9em; white-space: nowrap; }
     td.byte-cell { text-align: center; padding: 2px; }
     .data-hdr { text-align: left; padding-left: 8px; }
-    .byte.sym-mapped { color: var(--vscode-editor-foreground, #eee); border-radius: 2px; }
+    .byte.sym-mapped { color: var(--vscode-editor-foreground, #eee); box-shadow: none; }
+    .byte[data-fl-tip] { cursor: default; }
     .gap { background: repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(128,128,128,0.12) 3px, rgba(128,128,128,0.12) 6px); }
+    #fl-tip {
+      position: fixed;
+      z-index: 10000;
+      max-width: min(420px, calc(100vw - 24px));
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground, #ccc));
+      background: var(--vscode-editorHoverWidget-background, #252526);
+      border: 1px solid var(--vscode-editorHoverWidget-border, #454545);
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.36);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.06s ease;
+    }
+    #fl-tip.fl-tip-visible { opacity: 1; }
   </style>
 </head>
 <body>
@@ -242,7 +276,8 @@ function renderHexViewerHtml(model, meta) {
     <div class="tab-panel" id="panel-image">${imageBody}</div>
     <div class="tab-panel" id="panel-records">${recordsBody}</div>
   </div>
-  ${meta.recordsScriptUri ? `<script src="${meta.recordsScriptUri}"></script>` : ''}
+  ${meta.recordsScriptUri ? `<script src="${escapeHtml(meta.recordsScriptUri)}"></script>` : ''}
+  ${meta.tooltipScriptUri ? `<script src="${escapeHtml(meta.tooltipScriptUri)}"></script>` : ''}
 </body>
 </html>`;
 }

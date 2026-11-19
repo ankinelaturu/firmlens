@@ -47,10 +47,10 @@ function bundleHintsForHex(hexPath) {
  * @param {vscode.Webview} webview
  * @param {vscode.Uri} extensionUri
  */
-function recordsScriptUri(webview, extensionUri) {
-  return webview.asWebviewUri(
-    vscode.Uri.joinPath(extensionUri, 'media', 'hex-viewer', 'records-collapse.js'),
-  ).toString();
+function hexViewerMediaUri(webview, extensionUri, fileName) {
+  return webview
+    .asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'hex-viewer', fileName))
+    .toString();
 }
 
 /**
@@ -77,7 +77,9 @@ function renderDocument(hexPath, session, webview, extensionUri) {
       maxReadBytes: config.get('maxReadBytes', 256),
     },
     recordsScriptUri:
-      webview && extensionUri ? recordsScriptUri(webview, extensionUri) : undefined,
+      webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'records-collapse.js') : undefined,
+    tooltipScriptUri:
+      webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'hex-tooltips.js') : undefined,
   });
   const rowCount = model.sections.reduce((n, s) => n + s.rows.length, 0);
   outputChannel?.appendLine(
