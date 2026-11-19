@@ -2,9 +2,10 @@
  * @fileoverview Memory image tab with symbol gutter (16-byte rows).
  */
 
-const { gutterLabel, primarySymbolAt } = require('./symbol-intervals');
-const { symbolByteStyle, symbolGutterStyle } = require('./symbol-color');
-const { symbolAtAddress, tooltipForByte } = require('./viewer-decode');
+const { gutterLabel, primarySymbolAt, isPaddingInterval } = require('./symbol-intervals');
+const { symbolByteStyle, symbolGutterStyle, paddingByteStyle, paddingGutterStyle } =
+  require('./symbol-color');
+const { symbolAtAddress, formatViewerTooltip } = require('./viewer-decode');
 const { byteColorClass } = require('./record-decode');
 
 /**
@@ -60,7 +61,7 @@ function renderSymbolIndex(intervals, hueMap) {
     );
   }
   const memberItems = intervals
-    .filter((s) => s.name.includes('.'))
+    .filter((s) => s.name.includes('.') && !s.name.includes('.(padding)'))
     .map((sym) => {
       const href = `#${anchorId(sym.start)}`;
       return (
@@ -117,7 +118,11 @@ function renderImageMap(regions, intervals, ctx) {
         gut.kind === 'start' ? 'gutter sym-start' : gut.kind === 'cont' ? 'gutter sym-cont' : 'gutter';
       const rowSym = primarySymbolAt(intervals, row.address);
       const gutterStyle =
-        rowSym && gut.kind !== 'empty' ? symbolGutterStyle(rowSym.name, hueMap) : '';
+        rowSym && gut.kind !== 'empty'
+          ? isPaddingInterval(rowSym)
+            ? paddingGutterStyle()
+            : symbolGutterStyle(rowSym.name, hueMap)
+          : '';
       const rowBlock =
         rowSym && gut.kind !== 'empty' ? ` data-fl-block="${rowSym.start}-${rowSym.end}"` : '';
       /** @type {string[]} */
@@ -126,18 +131,30 @@ function renderImageMap(regions, intervals, ctx) {
         const sym = b.available ? symbolAtAddress(intervals, b.address) : null;
         let cls = b.available ? `byte ${byteColorClass(parseInt(b.text, 16))}` : 'byte gap';
         let extraStyle = '';
-        let tip = '';
+        let tipPlain = '';
+        let tipHtml = '';
         if (sym && b.available) {
-          cls = 'byte sym-mapped';
-          extraStyle = symbolByteStyle(sym.name, hueMap);
+          cls = isPaddingInterval(sym) ? 'byte sym-mapped sym-padding' : 'byte sym-mapped';
+          extraStyle = isPaddingInterval(sym) ? paddingByteStyle() : symbolByteStyle(sym.name, hueMap);
           if (fw?.memory && fw?.dwarf && axfPath) {
-            tip = tooltipForByte(fw.memory, fw.dwarf, sym, b.address, ctx.limits, axfPath);
+            const formatted = formatViewerTooltip(
+              fw.memory,
+              fw.dwarf,
+              sym,
+              b.address,
+              ctx.limits,
+              axfPath,
+            );
+            tipPlain = formatted.plain;
+            tipHtml = formatted.html;
           } else {
-            tip = sym.name;
+            tipPlain = sym.name;
           }
         }
         const blockAttr = sym ? ` data-fl-block="${sym.start}-${sym.end}"` : '';
-        const tipAttr = tip ? ` data-fl-tip="${escapeAttr(tip)}"` : '';
+        const tipAttr =
+          (tipPlain ? ` data-fl-tip="${escapeAttr(tipPlain)}"` : '') +
+          (tipHtml ? ` data-fl-tip-html="${escapeAttr(tipHtml)}"` : '');
         cells.push(
           `<td class="byte-cell"><span class="${cls}" style="${escapeAttr(extraStyle)}"${tipAttr}${blockAttr}>${escapeHtml(b.text)}</span></td>`,
         );

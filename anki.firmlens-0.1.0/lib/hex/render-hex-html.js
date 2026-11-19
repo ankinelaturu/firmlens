@@ -132,7 +132,7 @@ function renderHexViewerHtml(model, meta) {
     table.records-grid .col-ln { width: 2.5em; }
     table.records-grid .col-ll { width: 2.5em; }
     table.records-grid .col-addr { width: 3.5em; }
-    table.records-grid .col-typ { width: 3.5em; }
+    table.records-grid .col-typ { width: 4.75em; }
     table.records-grid .col-load { width: 6.5em; }
     table.records-grid .col-data { width: auto; }
     table.records-grid .data .byte.sym-mapped {
@@ -262,11 +262,11 @@ function renderHexViewerHtml(model, meta) {
     #fl-tip {
       position: fixed;
       z-index: 10000;
-      max-width: min(420px, calc(100vw - 24px));
+      max-width: min(440px, calc(100vw - 24px));
       padding: 8px 10px;
       font-size: 12px;
-      line-height: 1.5;
-      white-space: pre-wrap;
+      line-height: 1.45;
+      font-family: var(--vscode-editor-font-family, Menlo, Monaco, Consolas, monospace);
       word-break: break-word;
       color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground, #ccc));
       background: var(--vscode-editorHoverWidget-background, #252526);
@@ -277,7 +277,72 @@ function renderHexViewerHtml(model, meta) {
       opacity: 0;
       transition: opacity 0.06s ease;
     }
+    #fl-tip:not(.fl-tip-rich) { white-space: pre-wrap; }
     #fl-tip.fl-tip-visible { opacity: 1; }
+    #fl-tip .fl-tip-title {
+      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: var(--vscode-foreground, #eee);
+    }
+    #fl-tip .fl-tip-off {
+      font-weight: 500;
+      opacity: 0.85;
+      margin-left: 4px;
+    }
+    #fl-tip .fl-tip-pill {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: lowercase;
+      letter-spacing: 0.03em;
+      color: var(--vscode-badge-foreground, #ccc);
+      background: var(--vscode-badge-background, rgba(120, 120, 120, 0.45));
+      border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.45));
+      vertical-align: middle;
+    }
+    .byte.sym-padding {
+      color: var(--vscode-descriptionForeground, #aaa);
+      opacity: 0.95;
+    }
+    #fl-tip .fl-tip-meta {
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground, #999);
+      margin-bottom: 6px;
+    }
+    #fl-tip .fl-tip-code {
+      margin: 6px 0 8px;
+      padding: 6px 8px;
+      border-radius: 3px;
+      background: var(--vscode-textCodeBlock-background, rgba(10, 10, 10, 0.4));
+      border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.35));
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    #fl-tip .fl-tip-file {
+      color: var(--vscode-descriptionForeground, #999);
+      margin-bottom: 2px;
+    }
+    #fl-tip .fl-tip-line { white-space: pre; }
+    #fl-tip .fl-tip-ln {
+      color: var(--vscode-editorLineNumber-foreground, #858585);
+      user-select: none;
+    }
+    #fl-tip .fl-tip-sep { margin: 0 2px; opacity: 0.6; }
+    #fl-tip .fl-tip-mono { font-family: inherit; }
+    #fl-tip .fl-tip-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--vscode-descriptionForeground, #999);
+      margin-bottom: 3px;
+    }
+    #fl-tip .fl-tip-summary { margin-bottom: 4px; }
+    #fl-tip .fl-tip-lines .fl-tip-decode-line { opacity: 0.95; }
+    #fl-tip .fl-tip-section { margin-top: 4px; }
   </style>
 </head>
 <body>

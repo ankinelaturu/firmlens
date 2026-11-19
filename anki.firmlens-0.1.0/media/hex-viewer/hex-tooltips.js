@@ -65,7 +65,8 @@
     if (!tipEl) return;
     tipEl.hidden = true;
     tipEl.classList.remove('fl-tip-visible');
-    tipEl.textContent = '';
+    tipEl.replaceChildren();
+    tipEl.classList.remove('fl-tip-rich');
   }
 
   /**
@@ -99,11 +100,18 @@
    * @param {number} y
    */
   function showTip(target, x, y) {
+    const html = target.getAttribute('data-fl-tip-html');
     const text = target.getAttribute('data-fl-tip');
-    if (!text) return;
+    if (!html && !text) return;
     const el = ensureTip();
     activeTarget = target;
-    el.textContent = text;
+    if (html) {
+      el.innerHTML = html;
+      el.classList.add('fl-tip-rich');
+    } else {
+      el.textContent = text || '';
+      el.classList.remove('fl-tip-rich');
+    }
     el.hidden = false;
     el.classList.add('fl-tip-visible');
     place(x, y);
@@ -114,7 +122,7 @@
    * @returns {el is Element}
    */
   function hasTip(el) {
-    return el instanceof Element && el.hasAttribute('data-fl-tip');
+    return el instanceof Element && (el.hasAttribute('data-fl-tip') || el.hasAttribute('data-fl-tip-html'));
   }
 
   /**
@@ -123,7 +131,7 @@
   function tipHost(t) {
     if (!(t instanceof Element)) return null;
     if (hasTip(t)) return t;
-    return t.closest('[data-fl-tip]');
+    return t.closest('[data-fl-tip], [data-fl-tip-html]');
   }
 
   /**

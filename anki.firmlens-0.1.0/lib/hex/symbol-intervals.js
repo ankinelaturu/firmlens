@@ -77,6 +77,61 @@ function buildGlobalIntervals(dwarf) {
  * @param {DwarfIndex | null} dwarf
  * @returns {SymbolInterval[]}
  */
+/**
+ * @param {SymbolInterval} sym
+ */
+function isPaddingInterval(sym) {
+  return sym.typeLabel === 'padding';
+}
+
+/**
+ * @param {SymbolInterval} sym
+ */
+function paddingParentName(sym) {
+  const mark = '.(padding)';
+  const i = sym.name.indexOf(mark);
+  if (i >= 0) return sym.name.slice(0, i);
+  return sym.name.split('.')[0];
+}
+
+/**
+ * Compiler layout gaps inside struct globals (tail + between members).
+ * @param {DwarfIndex | null} dwarf
+ * @returns {SymbolInterval[]}
+ */
+function buildStructPaddingIntervals(dwarf) {
+  if (!dwarf?.variables?.length) return [];
+  /** @type {SymbolInterval[]} */
+  const out = [];
+  for (const v of dwarf.variables) {
+    if (v.type?.kind !== 'struct' || !v.type.byteSize) continue;
+    const structSize = v.type.byteSize;
+    const members = [...(v.type.members || [])].sort((a, b) => a.offset - b.offset);
+    let cursor = 0;
+    let gapIndex = 0;
+    const pushGap = (lo, hi) => {
+      if (hi <= lo) return;
+      gapIndex += 1;
+      const suffix = gapIndex > 1 ? String(gapIndex) : '';
+      out.push({
+        name: `${v.name}.(padding)${suffix}`,
+        start: v.address + lo,
+        end: v.address + hi,
+        typeLabel: 'padding',
+        declLine: v.declLine,
+        declFile: v.declFile,
+      });
+    };
+    for (const m of members) {
+      const sz = typeByteSize(m.type);
+      if (m.offset > cursor) pushGap(cursor, m.offset);
+      cursor = Math.max(cursor, m.offset + sz);
+    }
+    if (cursor < structSize) pushGap(cursor, structSize);
+  }
+  return out;
+}
+
 function buildAllIntervals(dwarf) {
   if (!dwarf?.variables?.length) return [];
   const out = buildGlobalIntervals(dwarf);
@@ -96,7 +151,8 @@ function buildAllIntervals(dwarf) {
       });
     }
   }
-  return [...out, ...members].sort((a, b) => a.start - b.start || a.name.localeCompare(b.name));
+  const padding = buildStructPaddingIntervals(dwarf);
+  return [...out, ...members, ...padding].sort((a, b) => a.start - b.start || a.name.localeCompare(b.name));
 }
 
 /**
@@ -145,16 +201,20 @@ function primarySymbolAt(intervals, address) {
 function gutterLabel(intervals, rowStart) {
   const sym = primarySymbolAt(intervals, rowStart);
   if (!sym) return { text: '', kind: 'empty' };
-  if (sym.start === rowStart) return { text: sym.name, kind: 'start' };
-  return { text: `│ ${sym.name}`, kind: 'cont' };
+  const label = isPaddingInterval(sym) ? '(padding)' : sym.name;
+  if (sym.start === rowStart) return { text: label, kind: 'start' };
+  return { text: `│ ${label}`, kind: 'cont' };
 }
 
 module.exports = {
   buildGlobalIntervals,
+  buildStructPaddingIntervals,
   buildAllIntervals,
   symbolsOverlapping,
   primarySymbolAt,
   gutterLabel,
   typeByteSize,
   formatTypeLabel,
+  isPaddingInterval,
+  paddingParentName,
 };

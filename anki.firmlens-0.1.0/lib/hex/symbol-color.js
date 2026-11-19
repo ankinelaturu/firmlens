@@ -85,7 +85,7 @@ function buildSymbolHueMap(intervals) {
     adj.get(b).add(a);
   }
 
-  const unique = [...new Set(intervals.map((s) => s.name))];
+  const unique = [...new Set(intervals.filter((s) => s.typeLabel !== 'padding').map((s) => s.name))];
   const order = [...unique].sort(
     (a, b) => (adj.get(b)?.size || 0) - (adj.get(a)?.size || 0) || a.localeCompare(b),
   );
@@ -165,9 +165,25 @@ function symbolGutterStyle(name, hueMap) {
   return `border-left: 3px solid hsl(${h}, 58%, 58%);`;
 }
 
+/**
+ * @returns {string}
+ */
+function paddingByteStyle() {
+  return 'background: repeating-linear-gradient(-45deg, rgba(120,120,120,0.18), rgba(120,120,120,0.18) 4px, rgba(90,90,90,0.22) 4px, rgba(90,90,90,0.22) 8px);';
+}
+
+/**
+ * @returns {string}
+ */
+function paddingGutterStyle() {
+  return 'border-left: 3px dashed rgba(140, 140, 140, 0.55);';
+}
+
 module.exports = {
   symbolByteStyle,
   symbolGutterStyle,
+  paddingByteStyle,
+  paddingGutterStyle,
   symbolHue,
   buildSymbolHueMap,
   buildSymbolRuns,

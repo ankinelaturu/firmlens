@@ -2,8 +2,9 @@
  * @fileoverview Intel HEX record grid — single table with collapsible section bands.
  */
 
-const { symbolAtAddress, tooltipForByte } = require('./viewer-decode');
-const { symbolByteStyle } = require('./symbol-color');
+const { symbolAtAddress, formatViewerTooltip } = require('./viewer-decode');
+const { symbolByteStyle, paddingByteStyle } = require('./symbol-color');
+const { isPaddingInterval } = require('./symbol-intervals');
 
 /**
  * @param {string} s
@@ -70,18 +71,30 @@ function renderDataBytes(row, ctx) {
     const addr = load != null ? load + i : null;
     let cls = `byte ${escapeHtml(cell.style || 'default')}`;
     let style = '';
-    let title = '';
+    let tipPlain = '';
+    let tipHtml = '';
     let block = '';
     if (canDecode && addr != null) {
       const sym = symbolAtAddress(intervals, addr);
       if (sym) {
-        cls = 'byte sym-mapped';
-        style = symbolByteStyle(sym.name, hueMap);
-        title = tooltipForByte(firmware.memory, firmware.dwarf, sym, addr, limits, axfPath);
+        cls = isPaddingInterval(sym) ? 'byte sym-mapped sym-padding' : 'byte sym-mapped';
+        style = isPaddingInterval(sym) ? paddingByteStyle() : symbolByteStyle(sym.name, hueMap);
+        const tip = formatViewerTooltip(
+          firmware.memory,
+          firmware.dwarf,
+          sym,
+          addr,
+          limits,
+          axfPath,
+        );
+        tipPlain = tip.plain;
+        tipHtml = tip.html;
         block = ` data-fl-block="${sym.start}-${sym.end}"`;
       }
     }
-    const tip = title ? ` data-fl-tip="${escapeAttr(title)}"` : '';
+    const tip =
+      (tipPlain ? ` data-fl-tip="${escapeAttr(tipPlain)}"` : '') +
+      (tipHtml ? ` data-fl-tip-html="${escapeAttr(tipHtml)}"` : '');
     const styleAttr = style ? ` style="${escapeAttr(style)}"` : '';
     parts.push(`<span class="${cls}"${styleAttr}${tip}${block}>${escapeHtml(cell.text)}</span>`);
   }

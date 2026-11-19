@@ -91,10 +91,12 @@ function loadDwarfIndex(elfPath) {
   }
 
   const ptrSize = elf.wordSize === 64 ? 8 : 4;
+  /** @type {Map<number, TypeRef>} */
+  const typeCache = new Map();
   for (const v of variables) {
     const typeOff = v._typeRefOff;
     delete v._typeRefOff;
-    v.type = typeOff != null ? resolveType(typeOff, dies, ptrSize) : { kind: 'unknown' };
+    v.type = typeOff != null ? resolveType(typeOff, dies, ptrSize, typeCache) : { kind: 'unknown' };
   }
 
   return {
@@ -230,61 +232,68 @@ function walkDies(info, p, end, abbrevs, abbrevOffset, addrSize, debugStr, le, d
  * @returns {TypeRef}
  */
 /**
- * @param {Set<number>} [_seen]
+ * @param {Map<number, TypeRef>} typeCache
+ * @param {Set<number>} [_active]
  */
-function resolveType(off, dies, pointerByteSize = 4, _seen = new Set()) {
+function resolveType(off, dies, pointerByteSize = 4, typeCache, _active = new Set()) {
   if (off == null) return { kind: 'unknown' };
-  if (_seen.has(off)) return { kind: 'unknown' };
-  _seen.add(off);
-  const die = dies.get(off);
-  if (!die) return { kind: 'unknown' };
+  const cached = typeCache.get(off);
+  if (cached) return cached;
+  if (_active.has(off)) return { kind: 'unknown' };
+  _active.add(off);
 
-  if (die.tag === C.DW_TAG_typedef) {
-    const inner = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize, _seen);
-    return { ...inner, typeName: die.attrs[C.DW_AT_name] || inner.typeName };
+  const die = dies.get(off);
+  if (!die) {
+    _active.delete(off);
+    return { kind: 'unknown' };
   }
 
-  if (die.tag === C.DW_TAG_base_type) {
+  /** @type {TypeRef} */
+  let result;
+
+  if (die.tag === C.DW_TAG_typedef) {
+    const inner = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize, typeCache, _active);
+    result = { ...inner, typeName: die.attrs[C.DW_AT_name] || inner.typeName };
+  } else if (die.tag === C.DW_TAG_base_type) {
     const enc = die.attrs[C.DW_AT_encoding];
     const size = die.attrs[C.DW_AT_byte_size] || 0;
     if (enc === C.DW_ATE_boolean || enc === 0x02) {
-      return { kind: 'bool', byteSize: size, typeName: die.attrs[C.DW_AT_name] };
+      result = { kind: 'bool', byteSize: size, typeName: die.attrs[C.DW_AT_name] };
+    } else if (enc === C.DW_ATE_unsigned) {
+      result = { kind: 'int', byteSize: size, signed: false, typeName: die.attrs[C.DW_AT_name] };
+    } else if (enc === C.DW_ATE_signed) {
+      result = { kind: 'int', byteSize: size, signed: true, typeName: die.attrs[C.DW_AT_name] };
+    } else {
+      result = { kind: 'int', byteSize: size, signed: false, typeName: die.attrs[C.DW_AT_name] };
     }
-    if (enc === C.DW_ATE_unsigned) {
-      return { kind: 'int', byteSize: size, signed: false, typeName: die.attrs[C.DW_AT_name] };
-    }
-    if (enc === C.DW_ATE_signed) {
-      return { kind: 'int', byteSize: size, signed: true, typeName: die.attrs[C.DW_AT_name] };
-    }
-    return { kind: 'int', byteSize: size, signed: false, typeName: die.attrs[C.DW_AT_name] };
-  }
-
-  if (die.tag === C.DW_TAG_pointer_type) {
-    const pointee = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize, _seen);
-    return {
+  } else if (die.tag === C.DW_TAG_pointer_type) {
+    const pointee = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize, typeCache, _active);
+    result = {
       kind: 'pointer',
       byteSize: pointerByteSize,
       pointee,
       typeName: `${pointee.typeName || 'void'}*`,
     };
-  }
-
-  if (die.tag === C.DW_TAG_structure_type) {
+  } else if (die.tag === C.DW_TAG_structure_type) {
     const members = (die.members || []).map((m) => ({
       name: m.name,
       offset: m.offset,
-      type: resolveType(m.typeRef, dies, pointerByteSize, _seen),
+      type: resolveType(m.typeRef, dies, pointerByteSize, typeCache, _active),
     }));
     const size = die.attrs[C.DW_AT_byte_size] || 0;
-    return {
+    result = {
       kind: 'struct',
       byteSize: size,
       typeName: die.attrs[C.DW_AT_name] || 'struct',
       members,
     };
+  } else {
+    result = { kind: 'unknown', typeName: die.attrs[C.DW_AT_name] };
   }
 
-  return { kind: 'unknown', typeName: die.attrs[C.DW_AT_name] };
+  _active.delete(off);
+  typeCache.set(off, result);
+  return result;
 }
 
 /**
