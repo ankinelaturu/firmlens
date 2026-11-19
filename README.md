@@ -27,7 +27,7 @@ ln -sfn "$PWD/anki.firmlens-0.1.0" ~/.vscode/extensions/anki.firmlens-0.1.0
 ln -sfn "$PWD/anki.firmlens-0.1.0" ~/.cursor/extensions/anki.firmlens-0.1.0
 ```
 
-Reload the window. With the repo open, FirmLens **auto-loads** `deploy/snapshot.hex` + `deploy/firmware.axf` on startup (see [deploy/README.md](deploy/README.md)). Command Palette → **FirmLens: Load Snapshot** for manual picks.
+Reload the window. With the repo open, FirmLens **auto-loads** `deploy/snapshot.hex` + `deploy/firmware.axf` on startup (see [deploy/README.md](deploy/README.md)). **FirmLens: Load Snapshot** replaces the triple (HEX + AXF + optional MAP); **FirmLens: View Snapshot** opens the hex viewer for the active session (status bar when a session is loaded).
 
 Put **`snapshot.hex`**, **`firmware.axf`**, optional **`firmware.map`** and **`metadata.json`** under workspace **`deploy/`** (or **`build/`**), open matching source.  
 Hover **globals/statics**, **`->` / `.` members**, pointers (one-level struct preview), with **local shadowing** suppressed.
