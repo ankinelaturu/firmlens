@@ -112,7 +112,7 @@ function renderHexViewerHtml(model, meta) {
       border-top: 1px solid var(--vscode-panel-border, #444);
     }
     details.block summary {
-      cursor: pointer; padding: 10px 14px; font-weight: 600; list-style: none;
+      cursor: pointer; padding: 0; margin: 0; font-weight: 600; list-style: none;
       background: var(--vscode-editor-inactiveSelectionBackground, #2a2a2a);
     }
     details.block summary::-webkit-details-marker { display: none; }
@@ -144,21 +144,28 @@ function renderHexViewerHtml(model, meta) {
       border-right-color: transparent;
     }
     table.records-grid .col-chk { width: 2.5em; }
-    tr.section-band td {
+    table.records-grid tr.section-band td {
       padding: 0;
+      border-right: none;
       border-bottom: 1px solid var(--vscode-panel-border, #444);
+      vertical-align: middle;
+      line-height: 1.2;
     }
-    .band-toggle {
-      display: flex; align-items: center; gap: 8px;
-      width: 100%; margin: 0; padding: 10px 14px;
+    table.records-grid .band-toggle {
+      display: flex; align-items: center; gap: 4px;
+      width: 100%; margin: 0; padding: 0;
       border: none; cursor: pointer; text-align: left;
-      font: inherit; color: inherit;
+      font: inherit; color: inherit; line-height: 1.2;
+      min-height: 0;
       background: var(--vscode-editor-inactiveSelectionBackground, #2a2a2a);
+      border-radius: 0;
+      appearance: none;
+      -webkit-appearance: none;
     }
-    .band-toggle:hover { background: var(--vscode-list-hoverBackground, #333); }
-    tr.band-linear .band-toggle { background: rgba(0, 122, 204, 0.12); }
-    tr.band-segment .band-toggle { background: rgba(180, 120, 0, 0.12); }
-    tr.band-eof .band-toggle {
+    table.records-grid .band-toggle:hover { background: var(--vscode-list-hoverBackground, #333); }
+    table.records-grid tr.band-linear .band-toggle { background: rgba(0, 122, 204, 0.12); }
+    table.records-grid tr.band-segment .band-toggle { background: rgba(180, 120, 0, 0.12); }
+    table.records-grid tr.band-eof .band-toggle {
       background: rgba(140, 80, 160, 0.15);
       color: var(--vscode-foreground, #ccc);
     }
