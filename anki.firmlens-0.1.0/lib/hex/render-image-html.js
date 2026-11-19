@@ -118,6 +118,8 @@ function renderImageMap(regions, intervals, ctx) {
       const rowSym = primarySymbolAt(intervals, row.address);
       const gutterStyle =
         rowSym && gut.kind !== 'empty' ? symbolGutterStyle(rowSym.name, hueMap) : '';
+      const rowBlock =
+        rowSym && gut.kind !== 'empty' ? ` data-fl-block="${rowSym.start}-${rowSym.end}"` : '';
       /** @type {string[]} */
       const cells = [];
       for (const b of row.bytes) {
@@ -134,14 +136,15 @@ function renderImageMap(regions, intervals, ctx) {
             tip = sym.name;
           }
         }
+        const blockAttr = sym ? ` data-fl-block="${sym.start}-${sym.end}"` : '';
         const tipAttr = tip ? ` data-fl-tip="${escapeAttr(tip)}"` : '';
         cells.push(
-          `<td class="byte-cell"><span class="${cls}" style="${escapeAttr(extraStyle)}"${tipAttr}>${escapeHtml(b.text)}</span></td>`,
+          `<td class="byte-cell"><span class="${cls}" style="${escapeAttr(extraStyle)}"${tipAttr}${blockAttr}>${escapeHtml(b.text)}</span></td>`,
         );
       }
       parts.push(`
             <tr class="image-row"${anchor}>
-              <td class="${gutterClass}" style="${escapeAttr(gutterStyle)}">${escapeHtml(gut.text)}</td>
+              <td class="${gutterClass}" style="${escapeAttr(gutterStyle)}"${rowBlock}>${escapeHtml(gut.text)}</td>
               <td class="addr-cell">${escapeHtml(row.addressText)}</td>
               ${cells.join('')}
             </tr>`);

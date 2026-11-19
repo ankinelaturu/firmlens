@@ -8,6 +8,10 @@
   let showTimer;
   /** @type {Element | null} */
   let activeTarget = null;
+  /** @type {Element[]} */
+  let popNodes = [];
+  /** @type {string | null} */
+  let activeBlockId = null;
 
   function ensureTip() {
     if (tipEl) return tipEl;
@@ -19,10 +23,45 @@
     return tipEl;
   }
 
+  function clearPop() {
+    for (const n of popNodes) n.classList.remove('fl-block-pop');
+    document.querySelectorAll('tr.image-row.fl-block-pop').forEach((r) => r.classList.remove('fl-block-pop'));
+    popNodes = [];
+    activeBlockId = null;
+  }
+
+  /**
+   * @param {Element} el
+   * @returns {string | null}
+   */
+  function blockIdOf(el) {
+    return el.getAttribute('data-fl-block');
+  }
+
+  /**
+   * @param {Element} host
+   */
+  function popBlock(host) {
+    const id = blockIdOf(host);
+    if (id && id === activeBlockId) return;
+    clearPop();
+    activeBlockId = id;
+    if (id) {
+      const escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id.replace(/"/g, '\\"');
+      popNodes = [...document.querySelectorAll(`[data-fl-block="${escaped}"]`)];
+    } else {
+      popNodes = [host];
+    }
+    for (const n of popNodes) n.classList.add('fl-block-pop');
+    const row = host.closest('tr.image-row');
+    if (row && id) row.classList.add('fl-block-pop');
+  }
+
   function hide() {
     window.clearTimeout(showTimer);
     showTimer = undefined;
     activeTarget = null;
+    clearPop();
     if (!tipEl) return;
     tipEl.hidden = true;
     tipEl.classList.remove('fl-tip-visible');
@@ -59,7 +98,7 @@
    * @param {number} x
    * @param {number} y
    */
-  function show(target, x, y) {
+  function showTip(target, x, y) {
     const text = target.getAttribute('data-fl-tip');
     if (!text) return;
     const el = ensureTip();
@@ -87,16 +126,36 @@
     return t.closest('[data-fl-tip]');
   }
 
+  /**
+   * @param {EventTarget | null} t
+   */
+  function blockHost(t) {
+    if (!(t instanceof Element)) return null;
+    if (t.hasAttribute('data-fl-block')) return t;
+    return t.closest('[data-fl-block]');
+  }
+
+  /**
+   * @param {Node | null} node
+   * @param {string | null} blockId
+   */
+  function stillInBlock(node, blockId) {
+    if (!(node instanceof Element) || !blockId) return false;
+    const h = blockHost(node);
+    return Boolean(h && blockIdOf(h) === blockId);
+  }
+
   document.addEventListener(
     'pointerover',
     (ev) => {
       const host = tipHost(ev.target);
       if (!host) return;
+      popBlock(host);
       if (host === activeTarget && tipEl && !tipEl.hidden) return;
-      hide();
+      window.clearTimeout(showTimer);
       const { clientX, clientY } = ev;
       showTimer = window.setTimeout(() => {
-        show(host, clientX, clientY);
+        showTip(host, clientX, clientY);
       }, SHOW_MS);
     },
     true,
@@ -108,7 +167,8 @@
       const host = tipHost(ev.target);
       if (!host) return;
       const related = /** @type {Node | null} */ (ev.relatedTarget);
-      if (related && host.contains(related)) return;
+      if (stillInBlock(related, blockIdOf(host))) return;
+      if (related instanceof Element && tipHost(related) === host) return;
       hide();
     },
     true,
@@ -117,8 +177,9 @@
   document.addEventListener(
     'pointermove',
     (ev) => {
-      if (!activeTarget || !tipEl || tipEl.hidden) return;
       const host = tipHost(ev.target);
+      if (host) popBlock(host);
+      if (!activeTarget || !tipEl || tipEl.hidden) return;
       if (host !== activeTarget) return;
       place(ev.clientX, ev.clientY);
     },

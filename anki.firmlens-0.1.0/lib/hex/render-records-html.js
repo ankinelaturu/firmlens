@@ -71,17 +71,19 @@ function renderDataBytes(row, ctx) {
     let cls = `byte ${escapeHtml(cell.style || 'default')}`;
     let style = '';
     let title = '';
+    let block = '';
     if (canDecode && addr != null) {
       const sym = symbolAtAddress(intervals, addr);
       if (sym) {
         cls = 'byte sym-mapped';
         style = symbolByteStyle(sym.name, hueMap);
         title = tooltipForByte(firmware.memory, firmware.dwarf, sym, addr, limits, axfPath);
+        block = ` data-fl-block="${sym.start}-${sym.end}"`;
       }
     }
     const tip = title ? ` data-fl-tip="${escapeAttr(title)}"` : '';
     const styleAttr = style ? ` style="${escapeAttr(style)}"` : '';
-    parts.push(`<span class="${cls}"${styleAttr}${tip}>${escapeHtml(cell.text)}</span>`);
+    parts.push(`<span class="${cls}"${styleAttr}${tip}${block}>${escapeHtml(cell.text)}</span>`);
   }
   return parts.join('');
 }

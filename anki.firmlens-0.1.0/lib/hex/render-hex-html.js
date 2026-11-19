@@ -223,7 +223,33 @@ function renderHexViewerHtml(model, meta) {
     .addr-col, .addr-cell { font-size: 0.9em; white-space: nowrap; }
     td.byte-cell { text-align: center; padding: 2px; }
     .data-hdr { text-align: left; padding-left: 8px; }
-    .byte.sym-mapped { color: var(--vscode-editor-foreground, #eee); box-shadow: none; }
+    .byte.sym-mapped {
+      color: var(--vscode-editor-foreground, #eee);
+      box-shadow: none;
+      transition: filter 0.1s ease, transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .byte.sym-mapped.fl-block-pop {
+      position: relative;
+      z-index: 2;
+      filter: brightness(1.5) saturate(1.2);
+      transform: scale(1.1);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28), 0 0 12px rgba(100, 170, 255, 0.55);
+      border-radius: 2px;
+    }
+    table.records-grid .data .byte.sym-mapped.fl-block-pop {
+      border-right-color: transparent;
+    }
+    tr.image-row.fl-block-pop {
+      background: rgba(0, 122, 204, 0.1);
+    }
+    tr.image-row.fl-block-pop .gutter.sym-start,
+    tr.image-row.fl-block-pop .gutter.sym-cont {
+      color: var(--vscode-foreground, #eee);
+      font-weight: 600;
+    }
+    .gutter.fl-block-pop {
+      text-shadow: 0 0 8px rgba(120, 180, 255, 0.65);
+    }
     .byte[data-fl-tip] { cursor: default; }
     .gap { background: repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(128,128,128,0.12) 3px, rgba(128,128,128,0.12) 6px); }
     #fl-tip {
