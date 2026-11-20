@@ -35,6 +35,10 @@
         "command": "firmlens.openHexViewer",
         "title": "FirmLens: Open Hex File in Viewer",
         "icon": "$(file-binary)"
+      },
+      {
+        "command": "firmlens.inspectAt",
+        "title": "FirmLens: Inspect Snapshot at Position"
       }
     ],
     "customEditors": [
@@ -71,8 +75,8 @@
           "enumDescriptions": [
             "No inline snapshot preview in the C/C++ editor.",
             "Snapshot values on hover only (full FirmLens markdown).",
-            "Inline inlay hints (snap: value) after resolvable globals; hover from C/C++ extensions only.",
-            "Inlay hints for quick values plus FirmLens hover for structs, provenance, and raw bytes."
+            "Inline :▦inspect hints after resolvable globals; click hint for FirmLens hover.",
+            ":▦inspect hints plus mouse hover for full FirmLens markdown (with C/C++ hovers)."
           ],
           "description": "How snapshot values appear in C/C++ source while a FirmLens session is active."
         },

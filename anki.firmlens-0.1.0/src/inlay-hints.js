@@ -1,12 +1,13 @@
 /**
- * @fileoverview Inlay hints for snapshot values (discoverable without hover).
+ * @fileoverview Inlay hints — :▦inspect affordance; click opens FirmLens hover.
  */
 
 const vscode = require('vscode');
 const { expressionsOnLine } = require('../lib/identity/expressions-on-line');
 const { buildFirmwarePreviewAt } = require('../lib/hover/build-hover');
-const { previewInlayLabel } = require('../lib/hover/preview-label');
+const { inlayInspectLabel } = require('../lib/hover/preview-label');
 const { getEditorPreviewMode, inlayHintsEnabled } = require('./editor-preview');
+const { runInspectAtPosition, firmwareHoverMarkdown } = require('./firmware-hover-at');
 
 const MAX_HINTS_PER_REQUEST = 80;
 
@@ -24,6 +25,25 @@ function registerFirmwareInlayHints(context, session) {
         changeEmitter.fire();
       }
     }),
+    vscode.commands.registerCommand(
+      'firmlens.inspectAt',
+      /**
+       * @param {string} docUri
+       * @param {number} line0
+       * @param {number} probeCol
+       * @param {number | undefined} hoverStart
+       * @param {number | undefined} hoverEnd
+       */
+      async (docUri, line0, probeCol, hoverStart, hoverEnd) => {
+        await runInspectAtPosition(
+          vscode.Uri.parse(docUri),
+          line0,
+          probeCol,
+          hoverStart,
+          hoverEnd,
+        );
+      },
+    ),
   );
 
   const provider = {
@@ -72,6 +92,9 @@ function registerFirmwareInlayHints(context, session) {
         sessionWarnings: active.sessionWarnings ?? [],
       };
 
+      const labelText = inlayInspectLabel();
+      const docUri = document.uri.toString();
+
       /** @type {vscode.InlayHint[]} */
       const hints = [];
       const endLine = Math.min(range.end.line, document.lineCount - 1);
@@ -90,17 +113,25 @@ function registerFirmwareInlayHints(context, session) {
           if (!preview) {
             continue;
           }
-          const label = previewInlayLabel(preview.snapshotValue);
           const position = new vscode.Position(lineIndex0, preview.endCol);
-          const hint = new vscode.InlayHint(
-            position,
-            label,
-            vscode.InlayHintKind.Parameter,
-          );
+          const part = new vscode.InlayHintLabelPart(labelText);
+          part.command = {
+            title: 'FirmLens inspect',
+            command: 'firmlens.inspectAt',
+            arguments: [
+              docUri,
+              lineIndex0,
+              preview.probeCol,
+              preview.hoverStart,
+              preview.hoverEnd,
+            ],
+          };
+          const hoverMd = firmwareHoverMarkdown(preview.body);
+          part.tooltip = hoverMd;
+
+          const hint = new vscode.InlayHint(position, [part], vscode.InlayHintKind.Parameter);
           hint.paddingLeft = true;
-          hint.tooltip = new vscode.MarkdownString(
-            `**FirmLens** · ${preview.title}\n\nSnapshot · \`${preview.snapshotValue.replace(/`/g, '\\`')}\`\n\nStorage · \`${preview.address}\`\n\nHover for full decode.`,
-          );
+          hint.tooltip = hoverMd;
           hints.push(hint);
         }
       }

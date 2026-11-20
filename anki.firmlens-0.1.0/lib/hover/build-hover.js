@@ -164,7 +164,7 @@ function buildFirmwareHover(input) {
  * @param {Parameters<typeof buildFirmwareHover>[0]} input
  * @param {number} lineIndex0
  * @param {number} probeCol
- * @returns {{ lineIndex0: number, endCol: number, snapshotValue: string, title: string, address: string } | null}
+ * @returns {{ lineIndex0: number, endCol: number, probeCol: number, hoverStart?: number, hoverEnd?: number, snapshotValue: string, title: string, address: string, body: string[] } | null}
  */
 function buildFirmwarePreviewAt(input, lineIndex0, probeCol) {
   const result = buildFirmwareHover({
@@ -177,10 +177,14 @@ function buildFirmwarePreviewAt(input, lineIndex0, probeCol) {
   }
   return {
     lineIndex0,
+    probeCol,
     endCol: result.hoverEnd ?? probeCol,
+    hoverStart: result.hoverStart,
+    hoverEnd: result.hoverEnd,
     snapshotValue: result.snapshotValue,
     title: result.title,
     address: result.address,
+    body: result.body,
   };
 }
 
