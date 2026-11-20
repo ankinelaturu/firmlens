@@ -89,6 +89,18 @@ function decodeType(memory, address, type, le, limits, lines, depth, addressSize
     decodeStructOrScalar(memory, address, type, le, limits, lines, depth, addressSize);
     return type.typeName || 'struct';
   }
+  if (type.kind === 'array' && type.elementType && type.length) {
+    const elem = type.elementType;
+    const elemSize = elem.byteSize || 1;
+    const show = Math.min(type.length, limits.maxStructFields);
+    lines.push(`[0..${type.length - 1}] (${type.typeName || 'array'})`);
+    for (let i = 0; i < show; i += 1) {
+      const val = decodeType(memory, address + i * elemSize, elem, le, limits, lines, depth + 1, addressSize);
+      lines.push(`[${i}]: ${val}`);
+    }
+    if (type.length > show) lines.push('…');
+    return type.typeName || `array[${type.length}]`;
+  }
   return '?';
 }
 

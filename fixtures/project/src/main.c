@@ -1,6 +1,8 @@
 #include "../include/app_types.h"
 
 extern mem_file_metadata *mf_root;
+extern network_hub_t g_network_hub;
+extern int32_t g_adc_samples[];
 extern uint32_t g_retry_count;
 extern board_state_t g_board;
 extern network_stats_t g_network;

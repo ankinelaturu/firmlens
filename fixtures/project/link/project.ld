@@ -8,5 +8,8 @@ SECTIONS
     .pointer 0x20000020 : { KEEP(*(.pointer)) }
     .count 0x20000024 : { KEEP(*(.count)) }
     .storage 0x20000028 : { KEEP(*(.storage)) }
+    .hub 0x20000038 : { KEEP(*(.hub)) }
+    .samples 0x20000080 : { KEEP(*(.samples)) }
     .root 0x20001000 : { KEEP(*(.root)) }
+    .peer 0x20001020 : { KEEP(*(.peer)) }
 }

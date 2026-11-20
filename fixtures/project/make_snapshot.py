@@ -113,13 +113,26 @@ def main():
     build_hex = PREFIX / "build.hex"
     memory = load_build_hex(build_hex)
 
+    peers_blob = b"".join(
+        struct.pack("<II", peer_id, ptr)
+        for peer_id, ptr in ((1, 0x20001020), (2, 0x20000010), (3, 0), (4, 0x20001020))
+    )
+    hub_blob = (
+        peers_blob
+        + struct.pack("<I", 0x20000010)
+        + struct.pack("<8I", 10, 20, 30, 40, 50, 60, 70, 80)
+    )
+
     patches = [
         (0x20000008, struct.pack("<HHI", 248, 3310, 99)),
         (0x20000010, struct.pack("<III?", 1005, 42, 1, True) + b"\x00\x00\x00"),
         (0x20000020, struct.pack("<I", 0x20001000)),
         (0x20000024, struct.pack("<I", 7)),
         (0x20000028, struct.pack("<IIII", 4, 2, 16, 0)),
+        (0x20000038, hub_blob),
+        (0x20000080, struct.pack("<8i", 100, 101, 102, 103, 104, 105, 106, 107)),
         (0x20001000, struct.pack("<II?3x", 1, 3, True)),
+        (0x20001020, struct.pack("<III?", 12, 4, 0, True) + b"\x00\x00\x00"),
     ]
     for address, data in patches:
         memory.update((address + offset, byte) for offset, byte in enumerate(data))

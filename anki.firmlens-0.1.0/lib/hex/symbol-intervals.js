@@ -22,6 +22,7 @@
  */
 function typeByteSize(type) {
   if (!type) return 4;
+  if (type.kind === 'array' && type.byteSize && type.byteSize > 0) return type.byteSize;
   if (type.byteSize && type.byteSize > 0) return type.byteSize;
   if (type.kind === 'bool') return 1;
   if (type.kind === 'pointer') return type.byteSize || 4;
@@ -44,6 +45,9 @@ function formatTypeLabel(v) {
   const t = v.type;
   if (!t) return 'unknown';
   if (t.typeName) return t.typeName;
+  if (t.kind === 'array' && t.elementType?.typeName && t.length) {
+    return `${t.elementType.typeName}[${t.length}]`;
+  }
   if (t.kind === 'pointer' && t.pointee?.typeName) return `${t.pointee.typeName} *`;
   return t.kind;
 }

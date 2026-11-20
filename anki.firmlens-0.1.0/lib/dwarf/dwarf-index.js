@@ -17,11 +17,13 @@ const C = require('./constants');
 
 /**
  * @typedef {object} TypeRef
- * @property {'void'|'int'|'bool'|'pointer'|'struct'|'unknown'} kind
+ * @property {'void'|'int'|'bool'|'pointer'|'struct'|'array'|'unknown'} kind
  * @property {number} [byteSize]
  * @property {boolean} [signed]
  * @property {string} [typeName]
  * @property {TypeRef} [pointee]
+ * @property {TypeRef} [elementType]
+ * @property {number} [length]
  * @property {DwarfMember[]} [members]
  */
 
@@ -78,6 +80,7 @@ function loadDwarfIndex(elfPath) {
       dies,
       variables,
       cuOff,
+      null,
       null,
     );
     if (afterWalk < dieStart) {
@@ -139,7 +142,21 @@ function loadDwarfIndex(elfPath) {
 /**
  * @param {number|null} parentStructOff
  */
-function walkDies(info, p, end, abbrevs, abbrevOffset, addrSize, debugStr, le, dies, variables, cuRefBase, parentStructOff) {
+function walkDies(
+  info,
+  p,
+  end,
+  abbrevs,
+  abbrevOffset,
+  addrSize,
+  debugStr,
+  le,
+  dies,
+  variables,
+  cuRefBase,
+  parentStructOff,
+  parentArrayOff,
+) {
   // cuRefBase = offset of compile unit length field (start of CU header)
   let guard = 0;
   while (p < end) {
@@ -170,8 +187,22 @@ function walkDies(info, p, end, abbrevs, abbrevOffset, addrSize, debugStr, le, d
       attrs[attr] = val;
     }
 
-    const die = { tag: spec.tag, attrs, offset: dieOff, cuRefBase: refBase, members: [] };
+    const die = { tag: spec.tag, attrs, offset: dieOff, cuRefBase: refBase, members: [], arrayLength: 0 };
     dies.set(dieOff, die);
+
+    if (spec.tag === C.DW_TAG_subrange_type && parentArrayOff != null) {
+      const parent = dies.get(parentArrayOff);
+      if (parent) {
+        let n = parent.arrayLength || 0;
+        if (typeof attrs[C.DW_AT_count] === 'number') n = Math.max(n, attrs[C.DW_AT_count]);
+        if (typeof attrs[C.DW_AT_upper_bound] === 'number') n = Math.max(n, attrs[C.DW_AT_upper_bound] + 1);
+        for (const [key, val] of Object.entries(attrs)) {
+          if (Number(key) === C.DW_AT_type) continue;
+          if (typeof val === 'number' && val > 0 && val < 0x100000) n = Math.max(n, val);
+        }
+        parent.arrayLength = n;
+      }
+    }
 
     if (spec.tag === C.DW_TAG_member && parentStructOff != null) {
       const parent = dies.get(parentStructOff);
@@ -218,8 +249,23 @@ function walkDies(info, p, end, abbrevs, abbrevOffset, addrSize, debugStr, le, d
     }
 
     const childStruct = spec.tag === C.DW_TAG_structure_type ? dieOff : parentStructOff;
+    const childArray = spec.tag === C.DW_TAG_array_type ? dieOff : parentArrayOff;
     if (spec.hasChildren) {
-      p = walkDies(info, p, end, abbrevs, abbrevOffset, addrSize, debugStr, le, dies, variables, refBase, childStruct);
+      p = walkDies(
+        info,
+        p,
+        end,
+        abbrevs,
+        abbrevOffset,
+        addrSize,
+        debugStr,
+        le,
+        dies,
+        variables,
+        refBase,
+        childStruct,
+        childArray,
+      );
     }
   }
   return p;
@@ -273,6 +319,22 @@ function resolveType(off, dies, pointerByteSize = 4, typeCache, _active = new Se
       byteSize: pointerByteSize,
       pointee,
       typeName: `${pointee.typeName || 'void'}*`,
+    };
+  } else if (die.tag === C.DW_TAG_array_type) {
+    const elementType = resolveType(die.attrs[C.DW_AT_type], dies, pointerByteSize, typeCache, _active);
+    const totalSize = die.attrs[C.DW_AT_byte_size] || 0;
+    const elemSize = elementType.byteSize || 1;
+    let length = die.arrayLength || 0;
+    if (!length && totalSize > 0 && elemSize > 0) {
+      length = Math.floor(totalSize / elemSize);
+    }
+    const baseName = elementType.typeName || elementType.kind;
+    result = {
+      kind: 'array',
+      byteSize: totalSize || length * elemSize,
+      elementType,
+      length,
+      typeName: `${baseName}[${length || '?'}]`,
     };
   } else if (die.tag === C.DW_TAG_structure_type) {
     const members = (die.members || []).map((m) => ({

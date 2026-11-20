@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define APP_TRACE_LEN 8
+#define APP_PEER_SLOTS 4
+
 typedef struct {
     uint32_t id;
     uint32_t file_count;
@@ -29,5 +32,16 @@ typedef struct {
     uint32_t capacity;
     uint32_t dropped;
 } storage_ring_t;
+
+typedef struct {
+    uint32_t peer_id;
+    network_stats_t *stats;
+} network_peer_t;
+
+typedef struct {
+    network_peer_t peers[APP_PEER_SLOTS];
+    network_stats_t *active;
+    uint32_t trace[APP_TRACE_LEN];
+} network_hub_t;
 
 #endif

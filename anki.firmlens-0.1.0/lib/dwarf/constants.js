@@ -2,6 +2,8 @@
 
 module.exports = {
   DW_TAG_compile_unit: 0x11,
+  DW_TAG_array_type: 0x01,
+  DW_TAG_subrange_type: 0x21,
   DW_TAG_variable: 0x34,
   DW_TAG_structure_type: 0x13,
   DW_TAG_member: 0x0d,
@@ -15,6 +17,8 @@ module.exports = {
   DW_AT_decl_file: 0x3a,
   DW_AT_decl_line: 0x3b,
   DW_AT_byte_size: 0x0b,
+  DW_AT_count: 0x1f,
+  DW_AT_upper_bound: 0x2f,
   DW_AT_encoding: 0x0e,
   DW_AT_data_member_location: 0x38,
   DW_AT_sibling: 0x01,

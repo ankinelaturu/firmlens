@@ -38,6 +38,7 @@ function typeDeclName(type) {
   if (!type) return 'unknown';
   if (type.typeName) return type.typeName;
   if (type.kind === 'pointer' && type.pointee?.typeName) return `${type.pointee.typeName} *`;
+  if (type.kind === 'array') return type.typeName || 'array';
   return type.kind;
 }
 
