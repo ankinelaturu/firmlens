@@ -144,6 +144,9 @@ function registerHexViewer(session, context) {
 
       refresh();
 
+      /** @type {vscode.ViewColumn | undefined} */
+      let symbolSourceViewColumn;
+
       webviewPanel.webview.onDidReceiveMessage((msg) => {
         if (msg?.type !== 'gotoSource') return;
         const { openSymbolSource } = require('./open-symbol-source');
@@ -153,7 +156,17 @@ function registerHexViewer(session, context) {
           dwarfName: String(msg.dwarfName || ''),
           declLine: Number(msg.declLine) || 0,
           declFile: String(msg.declFile || ''),
-        });
+          sourceViewColumn: symbolSourceViewColumn,
+        })
+          .then((result) => {
+            if (result?.viewColumn != null) {
+              symbolSourceViewColumn = result.viewColumn;
+            }
+          })
+          .catch((err) => {
+            const message = err instanceof Error ? err.message : String(err);
+            outputChannel?.appendLine(`[hex viewer] gotoSource failed: ${message}`);
+          });
       });
 
       const watcher = vscode.workspace.createFileSystemWatcher(

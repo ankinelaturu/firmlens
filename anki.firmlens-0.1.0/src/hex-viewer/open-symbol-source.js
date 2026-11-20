@@ -53,15 +53,49 @@ async function resolveSourceDocumentUri(declFile, declLine, dwarfName, remaps) {
 }
 
 /**
+ * @param {number | undefined} col
+ */
+function isStableViewColumn(col) {
+  return typeof col === 'number' && col >= 1;
+}
+
+/**
+ * @param {number | undefined} col
+ */
+function tabGroupOpenForColumn(col) {
+  if (!isStableViewColumn(col)) return false;
+  return vscode.window.tabGroups.all.some((g) => g.viewColumn === col);
+}
+
+/**
+ * @param {vscode.Uri} uri
+ */
+function findTabGroupIndexForUri(uri) {
+  const want = uri.toString();
+  const groups = vscode.window.tabGroups.all;
+  for (let i = 0; i < groups.length; i += 1) {
+    const hit = groups[i].tabs.some((tab) => {
+      const input = tab.input;
+      if (input instanceof vscode.TabInputText) return input.uri.toString() === want;
+      return false;
+    });
+    if (hit) return i;
+  }
+  return -1;
+}
+
+/**
  * @param {object} opts
  * @param {string} opts.hexPath
  * @param {ReturnType<typeof import('../session').createSessionManager>} opts.session
  * @param {string} opts.dwarfName
  * @param {number} opts.declLine
  * @param {string} [opts.declFile]
+ * @param {number} [opts.sourceViewColumn] Reuse split from prior goto in this hex viewer.
+ * @returns {Promise<{ viewColumn?: number } | void>}
  */
 async function openSymbolSource(opts) {
-  const { hexPath, session, dwarfName, declLine, declFile } = opts;
+  const { hexPath, session, dwarfName, declLine, declFile, sourceViewColumn } = opts;
   const line = Math.max(0, Number(declLine) || 0);
   if (!dwarfName || line <= 0) {
     vscode.window.showWarningMessage('FirmLens: no declaration line in DWARF for this symbol.');
@@ -96,11 +130,39 @@ async function openSymbolSource(opts) {
   const doc = await vscode.workspace.openTextDocument(uri);
   const lineIndex = Math.min(line - 1, Math.max(0, doc.lineCount - 1));
   const position = new vscode.Position(lineIndex, 0);
-  await vscode.window.showTextDocument(doc, {
-    selection: new vscode.Range(position, position),
-    viewColumn: vscode.ViewColumn.Beside,
-    preserveFocus: false,
-  });
+  const selection = new vscode.Range(position, position);
+  const reuseColumn =
+    sourceViewColumn != null && tabGroupOpenForColumn(sourceViewColumn)
+      ? sourceViewColumn
+      : undefined;
+
+  try {
+    const editor = await vscode.window.showTextDocument(doc, {
+      selection,
+      viewColumn: reuseColumn ?? vscode.ViewColumn.Beside,
+      preserveFocus: false,
+      preview: false,
+    });
+    let viewColumn = editor.viewColumn;
+    if (!isStableViewColumn(viewColumn)) {
+      const fromEditor = vscode.window.visibleTextEditors.find(
+        (e) => e.document.uri.toString() === doc.uri.toString() && isStableViewColumn(e.viewColumn),
+      );
+      viewColumn = fromEditor?.viewColumn;
+    }
+    if (!isStableViewColumn(viewColumn)) {
+      const groupIdx = findTabGroupIndexForUri(doc.uri);
+      if (groupIdx >= 0) {
+        const col = vscode.window.tabGroups.all[groupIdx]?.viewColumn;
+        if (isStableViewColumn(col)) viewColumn = col;
+      }
+    }
+    return isStableViewColumn(viewColumn) ? { viewColumn } : {};
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    vscode.window.showErrorMessage(`FirmLens: could not open source (${message})`);
+    return {};
+  }
 }
 
 module.exports = {
