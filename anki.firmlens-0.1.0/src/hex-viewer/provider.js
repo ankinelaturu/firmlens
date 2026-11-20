@@ -91,6 +91,8 @@ function renderDocument(hexPath, session, webview, extensionUri) {
       webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'symbols-tree.js') : undefined,
     symbolsGotoScriptUri:
       webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'symbols-goto.js') : undefined,
+    symbolsGotoMemScriptUri:
+      webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'symbols-goto-mem.js') : undefined,
   });
   const rowCount = model.sections.reduce((n, s) => n + s.rows.length, 0);
   outputChannel?.appendLine(

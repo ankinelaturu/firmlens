@@ -108,6 +108,12 @@ function renderDataBytes(row, ctx) {
  * @param {RecordsRenderCtx} ctx
  */
 function renderRecordRow(row, ctx) {
+  const load = parseLoadAddr(row.loadAddr);
+  const byteCount = row.isData ? (row.dataCells || []).length : 0;
+  const addrAttr =
+    load != null && byteCount > 0
+      ? ` data-fl-addr-start="${load}" data-fl-addr-end="${load + byteCount}"`
+      : '';
   const dataHtml = row.isData
     ? renderDataBytes(row, ctx)
     : (row.dataCells || [])
@@ -118,7 +124,7 @@ function renderRecordRow(row, ctx) {
         .join('');
 
   return `
-      <tr class="records-data${row.isData ? ' data-row' : ''}">
+      <tr class="records-data${row.isData ? ' data-row' : ''}"${addrAttr}>
         <td class="ln">${row.lineNo}</td>
         <td>${escapeHtml(row.ll)}</td>
         <td>${escapeHtml(row.addr)}</td>

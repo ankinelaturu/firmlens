@@ -5,6 +5,7 @@
 const { buildSymbolTreeModel, formatLenHex, lenTooltip } = require('./symbol-tree-model');
 const { buildAllIntervals } = require('./symbol-intervals');
 const { formatViewerTooltip } = require('./viewer-decode');
+const { formatGotoAddress } = require('./pointer-target');
 
 /**
  * @param {string} s
@@ -68,6 +69,12 @@ function renderSymbolsTabHtml(firmware, opts) {
         ? 'sym-data-cell sym-data-parent'
         : 'sym-data-cell sym-data-leaf';
     const dataText = n.unknown ? '—' : escapeHtml(n.displayHex);
+    const memGotoBtn =
+      n.gotoMemoryAddr != null
+        ? `<button type="button" class="sym-goto-mem" data-goto-addr="${n.gotoMemoryAddr}" title="Go to address in HEX records" aria-label="Go to ${escapeAttr(
+            formatGotoAddress(n.gotoMemoryAddr),
+          )}"><span class="sym-goto-mem-lbl">Goto ${escapeHtml(formatGotoAddress(n.gotoMemoryAddr))}</span></button>`
+        : '';
     const tipAttr =
       !n.unknown && n.tooltipHex
         ? ` data-fl-tip="${escapeAttr(n.tooltipHex)}" data-fl-tip-html="${escapeAttr(
@@ -113,7 +120,7 @@ function renderSymbolsTabHtml(firmware, opts) {
           n.label,
         )}</span>${typePill}${gotoBtn}</span></td>
         <td class="sym-addr-cell">0x${n.start.toString(16).toUpperCase()}</td>
-        <td class="${dataClass}"${tipAttr} data-full-hex="${escapeAttr(n.fullHex)}">${dataText}</td>
+        <td class="${dataClass}"${tipAttr} data-full-hex="${escapeAttr(n.fullHex)}"><span class="sym-data-inner"><span class="sym-data-hex">${dataText}</span>${memGotoBtn}</span></td>
         <td class="sym-len-cell" title="${escapeAttr(lenTooltip(n.length))}">${escapeHtml(
           formatLenHex(n.length),
         )}</td>

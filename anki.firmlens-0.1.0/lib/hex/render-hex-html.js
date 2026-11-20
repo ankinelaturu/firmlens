@@ -44,6 +44,7 @@ function countDataRows(sections) {
  *   tooltipScriptUri?: string;
  *   symbolsScriptUri?: string;
  *   symbolsGotoScriptUri?: string;
+ *   symbolsGotoMemScriptUri?: string;
  *   sourceRoots?: string[];
  *   sourceRemaps?: { from: string; to: string }[];
  * }} meta
@@ -442,6 +443,42 @@ function renderHexViewerHtml(model, meta) {
       outline-offset: 1px;
     }
     table.symbols-grid .sym-name-inner[data-fl-tip-html] { cursor: default; }
+    table.symbols-grid .sym-data-inner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    table.symbols-grid .sym-data-hex { flex: 1 1 auto; min-width: 0; }
+    table.symbols-grid .sym-goto-mem {
+      flex: 0 0 auto;
+      margin-left: auto;
+      padding: 1px 6px;
+      border: 1px solid var(--vscode-button-border, transparent);
+      border-radius: 3px;
+      background: var(--vscode-button-secondaryBackground, rgba(128,128,128,0.2));
+      color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+      cursor: pointer;
+      font-size: 0.78em;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    table.symbols-grid .sym-goto-mem:hover {
+      background: var(--vscode-button-secondaryHoverBackground, rgba(128,128,128,0.35));
+    }
+    table.symbols-grid .sym-goto-mem:focus-visible {
+      outline: 1px solid var(--vscode-focusBorder);
+      outline-offset: 1px;
+    }
+    tr.records-data.fl-addr-highlight td {
+      background: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.33));
+    }
+    td.data .byte.fl-byte-highlight {
+      outline: 2px solid var(--vscode-editor-findMatchBorder, #ea5c00);
+      outline-offset: -1px;
+      border-radius: 2px;
+    }
     table.symbols-grid .sym-tree-depth-1 { padding-left: 1.25em; }
     table.symbols-grid .sym-tree-depth-2 { padding-left: 2em; }
     table.symbols-grid .sym-tree-toggle {
@@ -515,6 +552,7 @@ function renderHexViewerHtml(model, meta) {
   ${meta.tooltipScriptUri ? `<script src="${escapeHtml(meta.tooltipScriptUri)}"></script>` : ''}
   ${meta.symbolsScriptUri ? `<script src="${escapeHtml(meta.symbolsScriptUri)}"></script>` : ''}
   ${meta.symbolsGotoScriptUri ? `<script src="${escapeHtml(meta.symbolsGotoScriptUri)}"></script>` : ''}
+  ${meta.symbolsGotoMemScriptUri ? `<script src="${escapeHtml(meta.symbolsGotoMemScriptUri)}"></script>` : ''}
 </body>
 </html>`;
 }
