@@ -82,6 +82,8 @@ function renderDocument(hexPath, session, webview, extensionUri) {
       webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'hex-tooltips.js') : undefined,
     symbolsScriptUri:
       webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'symbols-tree.js') : undefined,
+    symbolsGotoScriptUri:
+      webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'symbols-goto.js') : undefined,
   });
   const rowCount = model.sections.reduce((n, s) => n + s.rows.length, 0);
   outputChannel?.appendLine(
@@ -141,6 +143,18 @@ function registerHexViewer(session, context) {
       };
 
       refresh();
+
+      webviewPanel.webview.onDidReceiveMessage((msg) => {
+        if (msg?.type !== 'gotoSource') return;
+        const { openSymbolSource } = require('./open-symbol-source');
+        void openSymbolSource({
+          hexPath,
+          session,
+          dwarfName: String(msg.dwarfName || ''),
+          declLine: Number(msg.declLine) || 0,
+          declFile: String(msg.declFile || ''),
+        });
+      });
 
       const watcher = vscode.workspace.createFileSystemWatcher(
         new vscode.RelativePattern(path.dirname(hexPath), path.basename(hexPath)),

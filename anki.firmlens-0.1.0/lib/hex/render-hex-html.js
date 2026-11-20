@@ -42,6 +42,7 @@ function countDataRows(sections) {
  *   recordsScriptUri?: string;
  *   tooltipScriptUri?: string;
  *   symbolsScriptUri?: string;
+ *   symbolsGotoScriptUri?: string;
  * }} meta
  */
 function renderHexViewerHtml(model, meta) {
@@ -347,7 +348,42 @@ function renderHexViewerHtml(model, meta) {
     table.symbols-grid .col-sym-len { width: 4.5em; }
     table.symbols-grid .sym-len-hdr,
     table.symbols-grid .sym-len-cell { text-align: right; }
-    table.symbols-grid .sym-name-cell { white-space: nowrap; }
+    table.symbols-grid .sym-name-cell { white-space: nowrap; max-width: 0; }
+    table.symbols-grid .sym-name-inner {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+      min-width: 0;
+    }
+    table.symbols-grid .sym-tree-label {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    table.symbols-grid .sym-goto-src {
+      flex: 0 0 auto;
+      margin-left: auto;
+      padding: 0 4px;
+      min-width: 1.4em;
+      height: 1.35em;
+      border: none;
+      border-radius: 3px;
+      background: transparent;
+      color: var(--vscode-descriptionForeground);
+      cursor: pointer;
+      font-size: 0.85em;
+      line-height: 1;
+    }
+    table.symbols-grid .sym-goto-src:hover {
+      background: var(--vscode-toolbar-hoverBackground);
+      color: var(--vscode-foreground);
+    }
+    table.symbols-grid .sym-goto-src:focus-visible {
+      outline: 1px solid var(--vscode-focusBorder);
+      outline-offset: 1px;
+    }
     table.symbols-grid .sym-tree-depth-1 { padding-left: 1.25em; }
     table.symbols-grid .sym-tree-depth-2 { padding-left: 2em; }
     table.symbols-grid .sym-tree-toggle {
@@ -355,7 +391,6 @@ function renderHexViewerHtml(model, meta) {
       font: inherit; color: inherit; background: transparent; vertical-align: middle;
     }
     table.symbols-grid .sym-tree-leaf { display: inline-block; width: 1.2em; margin-right: 4px; }
-    table.symbols-grid .sym-tree-label { vertical-align: middle; }
     table.symbols-grid .sym-type-pill {
       display: inline-block;
       margin-left: 8px;
@@ -421,6 +456,7 @@ function renderHexViewerHtml(model, meta) {
   ${meta.recordsScriptUri ? `<script src="${escapeHtml(meta.recordsScriptUri)}"></script>` : ''}
   ${meta.tooltipScriptUri ? `<script src="${escapeHtml(meta.tooltipScriptUri)}"></script>` : ''}
   ${meta.symbolsScriptUri ? `<script src="${escapeHtml(meta.symbolsScriptUri)}"></script>` : ''}
+  ${meta.symbolsGotoScriptUri ? `<script src="${escapeHtml(meta.symbolsGotoScriptUri)}"></script>` : ''}
 </body>
 </html>`;
 }

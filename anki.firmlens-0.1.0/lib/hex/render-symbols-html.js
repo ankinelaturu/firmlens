@@ -66,11 +66,19 @@ function renderSymbolsTabHtml(firmware) {
     const typePill = n.typeLabel
       ? `<span class="sym-type-pill">${escapeHtml(n.typeLabel)}</span>`
       : '';
+    const gotoBtn =
+      n.canGoto && n.dwarfName
+        ? `<button type="button" class="sym-goto-src" aria-label="Go to source" title="Go to source" data-dwarf-name="${escapeAttr(
+            n.dwarfName,
+          )}" data-decl-line="${n.declLine || 0}" data-decl-file="${escapeAttr(n.declFile || '')}"><span class="sym-goto-ico" aria-hidden="true">↗</span></button>`
+        : '';
 
     rows.push(`      <tr class="sym-tree-row${childRow}"${hiddenAttr} data-node-id="${escapeAttr(
       n.id,
     )}"${parentAttr}${rowAttr}>
-        <td class="sym-name-cell${indent}">${toggle}<span class="sym-tree-label">${escapeHtml(n.label)}</span>${typePill}</td>
+        <td class="sym-name-cell${indent}"><span class="sym-name-inner">${toggle}<span class="sym-tree-label">${escapeHtml(
+          n.label,
+        )}</span>${typePill}${gotoBtn}</span></td>
         <td class="sym-addr-cell">0x${n.start.toString(16).toUpperCase()}</td>
         <td class="${dataClass}"${tipAttr} data-full-hex="${escapeAttr(n.fullHex)}">${dataText}</td>
         <td class="sym-len-cell" title="${escapeAttr(lenTooltip(n.length))}">${escapeHtml(

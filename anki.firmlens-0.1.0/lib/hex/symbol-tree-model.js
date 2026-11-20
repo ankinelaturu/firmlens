@@ -3,6 +3,7 @@
  */
 
 const { buildAllIntervals, isPaddingInterval } = require('./symbol-intervals');
+const { canGotoSymbol } = require('./resolve-decl-source');
 
 const DISPLAY_HEX_CAP = 64;
 const BYTES_PER_TOOLTIP_LINE = 16;
@@ -28,6 +29,10 @@ const BYTES_PER_TOOLTIP_LINE = 16;
  * @property {string} displayHex
  * @property {string} tooltipHex
  * @property {string} [typeLabel]
+ * @property {string} [dwarfName]
+ * @property {number} [declLine]
+ * @property {string} [declFile]
+ * @property {boolean} [canGoto]
  */
 
 /**
@@ -207,6 +212,12 @@ function buildSymbolTreeModel(memory, dwarf) {
     const intervalType =
       'typeLabel' in slot && !meta.unknown ? /** @type {SymbolInterval} */ (slot).typeLabel : '';
     const pill = typePillLabel(intervalType, Boolean(meta.unknown), label);
+    const interval =
+      !meta.unknown && 'name' in slot ? /** @type {SymbolInterval} */ (slot) : null;
+    const dwarfName = interval && !meta.unknown ? interval.name : undefined;
+    const declLine = interval ? interval.declLine : 0;
+    const declFile = interval ? interval.declFile : '';
+    const padding = interval ? isPaddingInterval(interval) : false;
     nodes.push({
       id,
       label,
@@ -221,6 +232,10 @@ function buildSymbolTreeModel(memory, dwarf) {
       displayHex: meta.unknown ? '' : display,
       tooltipHex: fullHex ? formatTooltipHex(fullHex) : '',
       typeLabel: pill || undefined,
+      dwarfName,
+      declLine,
+      declFile,
+      canGoto: dwarfName ? canGotoSymbol(dwarfName, declLine, Boolean(meta.unknown), padding) : false,
     });
   };
 
@@ -277,6 +292,10 @@ function buildSymbolTreeModel(memory, dwarf) {
       displayHex: display,
       tooltipHex: fullHex ? formatTooltipHex(fullHex) : '',
       typeLabel: parentType || undefined,
+      dwarfName: g.name,
+      declLine: g.declLine,
+      declFile: g.declFile,
+      canGoto: canGotoSymbol(g.name, g.declLine, false, false),
     });
 
     for (const k of kids) {
