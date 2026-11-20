@@ -45,6 +45,7 @@ function countDataRows(sections) {
  *   symbolsScriptUri?: string;
  *   symbolsGotoScriptUri?: string;
  *   symbolsGotoMemScriptUri?: string;
+ *   rowSelectionScriptUri?: string;
  *   sourceRoots?: string[];
  *   sourceRemaps?: { from: string; to: string }[];
  * }} meta
@@ -442,7 +443,7 @@ function renderHexViewerHtml(model, meta) {
       outline: 1px solid var(--vscode-focusBorder);
       outline-offset: 1px;
     }
-    table.symbols-grid .sym-name-inner[data-fl-tip-html] { cursor: default; }
+    table.symbols-grid .sym-tree-label[data-fl-tip-html] { cursor: default; }
     table.symbols-grid .sym-data-inner {
       display: flex;
       flex-wrap: wrap;
@@ -502,16 +503,25 @@ function renderHexViewerHtml(model, meta) {
       outline: 1px solid var(--vscode-focusBorder);
       outline-offset: 1px;
     }
-    table.symbols-grid tr.sym-tree-row.fl-sym-highlight td {
-      background: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.25));
+    table.symbols-grid tr.sym-tree-row { cursor: pointer; }
+    table.symbols-grid tr.sym-tree-row.fl-row-selected td {
+      background: var(--vscode-list-inactiveSelectionBackground, rgba(255, 255, 255, 0.06));
     }
-    tr.records-data.fl-addr-highlight td {
-      background: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.33));
+    table.symbols-grid tr.sym-tree-row.fl-row-selected td:first-child {
+      box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #007fd4);
     }
-    td.data .byte.fl-byte-highlight {
-      outline: 2px solid var(--vscode-editor-findMatchBorder, #ea5c00);
+    tr.records-data.data-row { cursor: pointer; }
+    tr.records-data.fl-row-selected td {
+      background: var(--vscode-list-inactiveSelectionBackground, rgba(255, 255, 255, 0.06));
+    }
+    tr.records-data.fl-row-selected td.ln {
+      box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #007fd4);
+    }
+    td.data .byte.fl-byte-selected {
+      outline: 1px solid var(--vscode-focusBorder, #007fd4);
       outline-offset: -1px;
       border-radius: 2px;
+      background: var(--vscode-list-activeSelectionBackground, rgba(255, 255, 255, 0.1));
     }
     table.symbols-grid .sym-tree-depth-1 { padding-left: 1.25em; }
     table.symbols-grid .sym-tree-depth-2 { padding-left: 2em; }
@@ -582,6 +592,7 @@ function renderHexViewerHtml(model, meta) {
     <div class="tab-panel" id="panel-records">${recordsBody}</div>
     <div class="tab-panel" id="panel-symbols">${symbolsBody}</div>
   </div>
+  ${meta.rowSelectionScriptUri ? `<script src="${escapeHtml(meta.rowSelectionScriptUri)}"></script>` : ''}
   ${meta.recordsScriptUri ? `<script src="${escapeHtml(meta.recordsScriptUri)}"></script>` : ''}
   ${meta.tooltipScriptUri ? `<script src="${escapeHtml(meta.tooltipScriptUri)}"></script>` : ''}
   ${meta.symbolsScriptUri ? `<script src="${escapeHtml(meta.symbolsScriptUri)}"></script>` : ''}

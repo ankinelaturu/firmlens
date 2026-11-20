@@ -124,7 +124,7 @@ function renderSymbolsTabHtml(firmware, opts) {
     rows.push(`      <tr class="sym-tree-row${childRow}"${hiddenAttr} data-node-id="${escapeAttr(
       n.id,
     )}"${parentAttr}${rowAttr}>
-        <td class="sym-name-cell${indent}"><span class="sym-name-inner"${nameTipAttr}>${toggle}<span class="sym-tree-label">${escapeHtml(
+        <td class="sym-name-cell${indent}"><span class="sym-name-inner">${toggle}<span class="sym-tree-label"${nameTipAttr}>${escapeHtml(
           n.label,
         )}</span>${typePill}${gotoBtn}</span></td>
         <td class="sym-addr-cell">0x${n.start.toString(16).toUpperCase()}</td>

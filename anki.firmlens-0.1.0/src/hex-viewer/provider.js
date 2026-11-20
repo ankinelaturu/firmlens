@@ -83,6 +83,8 @@ function renderDocument(hexPath, session, webview, extensionUri) {
     },
     sourceRoots,
     sourceRemaps: remaps,
+    rowSelectionScriptUri:
+      webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'row-selection.js') : undefined,
     recordsScriptUri:
       webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'records-collapse.js') : undefined,
     tooltipScriptUri:

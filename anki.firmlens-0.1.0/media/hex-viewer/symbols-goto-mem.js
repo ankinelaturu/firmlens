@@ -13,10 +13,11 @@
   }
 
   /** @param {number} addr */
+  /** @type {((row: HTMLTableRowElement | null, byte?: Element | null) => void) | undefined} */
+  const selectRecordsRow = window.FirmLens?.selectRecordsRow;
+
+  /** @param {number} addr */
   function highlightAtAddress(addr) {
-    document.querySelectorAll('.fl-addr-highlight, .fl-byte-highlight').forEach((el) => {
-      el.classList.remove('fl-addr-highlight', 'fl-byte-highlight');
-    });
     const rows = document.querySelectorAll('tr.records-data[data-fl-addr-start]');
     for (const row of rows) {
       if (!(row instanceof HTMLTableRowElement)) continue;
@@ -25,16 +26,12 @@
       if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
       if (addr < start || addr >= end) continue;
       expandSectionForRow(row);
-      row.classList.add('fl-addr-highlight');
       const offset = addr - start;
       const bytes = row.querySelectorAll('td.data .byte');
       const byte = bytes[offset];
-      if (byte) byte.classList.add('fl-byte-highlight');
+      if (selectRecordsRow) selectRecordsRow(row, byte instanceof Element ? byte : null);
+      else row.classList.add('fl-row-selected');
       row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      window.setTimeout(() => {
-        row.classList.remove('fl-addr-highlight');
-        if (byte) byte.classList.remove('fl-byte-highlight');
-      }, 2400);
       return true;
     }
     return false;
@@ -89,12 +86,10 @@
       if (parent.getAttribute('data-expanded') === 'false') setContainerExpanded(parent, true);
     }
 
-    document.querySelectorAll('tr.sym-tree-row.fl-sym-highlight').forEach((r) => {
-      r.classList.remove('fl-sym-highlight');
-    });
-    row.classList.add('fl-sym-highlight');
+    const selectSymbolRow = window.FirmLens?.selectSymbolRow;
+    if (selectSymbolRow) selectSymbolRow(row);
+    else row.classList.add('fl-row-selected');
     row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    window.setTimeout(() => row.classList.remove('fl-sym-highlight'), 2400);
     return true;
   }
 
