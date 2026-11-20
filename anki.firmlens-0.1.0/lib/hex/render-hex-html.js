@@ -471,6 +471,40 @@ function renderHexViewerHtml(model, meta) {
       outline: 1px solid var(--vscode-focusBorder);
       outline-offset: 1px;
     }
+    table.symbols-grid .sym-data-gotos {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      flex: 0 0 auto;
+      margin-left: auto;
+    }
+    table.symbols-grid .sym-goto-sym {
+      padding: 1px 6px;
+      border: 1px solid var(--vscode-button-border, transparent);
+      border-radius: 3px;
+      background: var(--vscode-badge-background, rgba(128,128,128,0.25));
+      color: var(--vscode-badge-foreground, var(--vscode-foreground));
+      cursor: pointer;
+      font-size: 0.78em;
+      font-family: inherit;
+      white-space: nowrap;
+      max-width: 14em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    table.symbols-grid .sym-goto-sym:hover {
+      filter: brightness(1.12);
+    }
+    table.symbols-grid .sym-goto-sym:focus-visible {
+      outline: 1px solid var(--vscode-focusBorder);
+      outline-offset: 1px;
+    }
+    table.symbols-grid tr.sym-tree-row.fl-sym-highlight td {
+      background: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.25));
+    }
     tr.records-data.fl-addr-highlight td {
       background: var(--vscode-editor-findMatchHighlightBackground, rgba(234, 92, 0, 0.33));
     }

@@ -40,20 +40,82 @@
     return false;
   }
 
+  const symbolsTable = document.getElementById('symbols-tree');
+
+  /**
+   * @param {HTMLTableRowElement} row
+   * @param {boolean} expanded
+   */
+  function setContainerExpanded(row, expanded) {
+    const id = row.getAttribute('data-node-id');
+    if (!id || !symbolsTable) return;
+    row.setAttribute('data-expanded', expanded ? 'true' : 'false');
+    const btn = row.querySelector('.sym-tree-toggle');
+    if (btn) {
+      btn.textContent = expanded ? '▼' : '▶';
+      btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      btn.setAttribute('aria-label', expanded ? 'Collapse' : 'Expand');
+    }
+    const dataCell = row.querySelector('.sym-data-parent');
+    if (dataCell) dataCell.classList.toggle('sym-data-suppressed', expanded);
+    symbolsTable.querySelectorAll(`tr.sym-tree-child[data-parent-id="${CSS.escape(id)}"]`).forEach((child) => {
+      if (expanded) child.removeAttribute('hidden');
+      else child.setAttribute('hidden', 'hidden');
+    });
+  }
+
+  /**
+   * @param {string} nodeId
+   */
+  function revealSymbolRow(nodeId) {
+    if (!symbolsTable) return false;
+    const tab = document.getElementById('tab-symbols');
+    if (tab instanceof HTMLInputElement) tab.checked = true;
+    const esc = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(nodeId) : nodeId.replace(/"/g, '\\"');
+    const row = symbolsTable.querySelector(`tr.sym-tree-row[data-node-id="${esc}"]`);
+    if (!(row instanceof HTMLTableRowElement)) return false;
+
+    /** @type {string | null} */
+    let parentId = row.getAttribute('data-parent-id');
+    /** @type {HTMLTableRowElement[]} */
+    const chain = [];
+    while (parentId) {
+      const parent = symbolsTable.querySelector(`tr.sym-tree-row[data-node-id="${CSS.escape(parentId)}"]`);
+      if (!(parent instanceof HTMLTableRowElement)) break;
+      chain.unshift(parent);
+      parentId = parent.getAttribute('data-parent-id');
+    }
+    for (const parent of chain) {
+      if (parent.getAttribute('data-expanded') === 'false') setContainerExpanded(parent, true);
+    }
+
+    document.querySelectorAll('tr.sym-tree-row.fl-sym-highlight').forEach((r) => {
+      r.classList.remove('fl-sym-highlight');
+    });
+    row.classList.add('fl-sym-highlight');
+    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    window.setTimeout(() => row.classList.remove('fl-sym-highlight'), 2400);
+    return true;
+  }
+
   document.addEventListener(
     'click',
     (ev) => {
-      const btn = ev.target instanceof Element ? ev.target.closest('.sym-goto-mem') : null;
-      if (!btn) return;
+      const memBtn = ev.target instanceof Element ? ev.target.closest('.sym-goto-mem') : null;
+      const symBtn = ev.target instanceof Element ? ev.target.closest('.sym-goto-sym') : null;
+      if (!memBtn && !symBtn) return;
       ev.preventDefault();
       ev.stopPropagation();
-      const addr = Number(btn.getAttribute('data-goto-addr') || '0');
+      if (symBtn) {
+        const nodeId = symBtn.getAttribute('data-goto-node-id') || '';
+        if (nodeId) revealSymbolRow(nodeId);
+        return;
+      }
+      const addr = Number(memBtn.getAttribute('data-goto-addr') || '0');
       if (!addr) return;
       const tab = document.getElementById('tab-records');
       if (tab instanceof HTMLInputElement) tab.checked = true;
-      if (!highlightAtAddress(addr)) {
-        /* target not in any data row — still switched to records tab */
-      }
+      highlightAtAddress(addr);
     },
     true,
   );

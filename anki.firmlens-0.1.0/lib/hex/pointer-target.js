@@ -4,6 +4,7 @@
 
 /**
  * @typedef {import('./hex-memory').HexMemory} HexMemory
+ * @typedef {import('./symbol-intervals').SymbolInterval} SymbolInterval
  */
 
 /**
@@ -53,8 +54,43 @@ function formatGotoAddress(addr) {
   return `0x${(addr >>> 0).toString(16).toUpperCase().padStart(8, '0')}`;
 }
 
+/**
+ * @param {string} id
+ */
+function safeSymbolNodeId(id) {
+  return id.replace(/[^a-zA-Z0-9_-]/g, '_');
+}
+
+/**
+ * Smallest symbol interval covering addr (excluding padding and self).
+ *
+ * @param {SymbolInterval[]} intervals
+ * @param {number} addr
+ * @param {string} [selfName]
+ * @returns {{ name: string; nodeId: string } | null}
+ */
+function resolvePointerTargetSymbol(intervals, addr, selfName) {
+  const { primarySymbolAt, isPaddingInterval } = require('./symbol-intervals');
+  const exactGlobal = intervals.find(
+    (s) =>
+      !s.name.includes('.') &&
+      !isPaddingInterval(s) &&
+      s.start === addr &&
+      (!selfName || s.name !== selfName),
+  );
+  if (exactGlobal) {
+    return { name: exactGlobal.name, nodeId: safeSymbolNodeId(exactGlobal.name) };
+  }
+  const sym = primarySymbolAt(intervals, addr);
+  if (!sym || isPaddingInterval(sym)) return null;
+  if (selfName && sym.name === selfName) return null;
+  return { name: sym.name, nodeId: safeSymbolNodeId(sym.name) };
+}
+
 module.exports = {
   isPointerTypeLabel,
   readPointerTarget,
   formatGotoAddress,
+  resolvePointerTargetSymbol,
+  safeSymbolNodeId,
 };

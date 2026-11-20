@@ -4,7 +4,7 @@
 
 const { buildAllIntervals, isPaddingInterval } = require('./symbol-intervals');
 const { canGotoSymbol } = require('./resolve-decl-source');
-const { readPointerTarget } = require('./pointer-target');
+const { readPointerTarget, resolvePointerTargetSymbol } = require('./pointer-target');
 
 const DISPLAY_HEX_CAP = 64;
 const BYTES_PER_TOOLTIP_LINE = 16;
@@ -35,6 +35,8 @@ const BYTES_PER_TOOLTIP_LINE = 16;
  * @property {string} [declFile]
  * @property {boolean} [canGoto]
  * @property {number} [gotoMemoryAddr]
+ * @property {string} [gotoMemorySymbol]
+ * @property {string} [gotoMemorySymbolId]
  */
 
 /**
@@ -224,6 +226,10 @@ function buildSymbolTreeModel(memory, dwarf) {
       interval && !meta.unknown && !padding
         ? readPointerTarget(memory, slot.start, slot.end, interval.typeLabel)
         : null;
+    const targetSym =
+      gotoMemoryAddr != null && dwarfName
+        ? resolvePointerTargetSymbol(intervals, gotoMemoryAddr, dwarfName)
+        : null;
     nodes.push({
       id,
       label,
@@ -243,6 +249,8 @@ function buildSymbolTreeModel(memory, dwarf) {
       declFile,
       canGoto: dwarfName ? canGotoSymbol(dwarfName, declLine, Boolean(meta.unknown), padding) : false,
       gotoMemoryAddr: gotoMemoryAddr ?? undefined,
+      gotoMemorySymbol: targetSym?.name,
+      gotoMemorySymbolId: targetSym?.nodeId,
     });
   };
 
