@@ -24,6 +24,20 @@ function run() {
   const partial = parseIntelHex(`:020000042000DA\n:081000000100000003000000E4\n:00000001FF\n`);
   const partialMeta = partial.read(0x20001000, 9);
   assert.strictEqual(partialMeta.available[8], false);
+
+  const commented = parseIntelHex(
+    [
+      '; TYPE=SNAPSHOT',
+      '; VERSION=2',
+      '# vendor metadata',
+      ':020000040800F2',
+      ':100000005589E50FB7050800002003050C100020F6',
+      ':00000001FF',
+    ].join('\n'),
+  );
+  assert.strictEqual(commented.hasByte(0x08000000), true);
+  assert.strictEqual(commented.read(0x08000000, 1).bytes[0], 0x55);
+
   console.log('hex-memory.test.js: OK');
 }
 

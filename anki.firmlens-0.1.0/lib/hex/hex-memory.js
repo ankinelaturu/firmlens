@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const { decodeRecordLine } = require('./record-decode');
+const { isIntelHexCommentLine } = require('./hex-lines');
 
 /**
  * @typedef {object} HexReadResult
@@ -48,6 +49,9 @@ function parseIntelHex(text) {
     }
     if (eof) {
       throw new Error(`Intel HEX: data after EOF (line ${lineNo + 1})`);
+    }
+    if (isIntelHexCommentLine(raw)) {
+      continue;
     }
     if (!raw.startsWith(':')) {
       throw new Error(`Intel HEX: missing ':' (line ${lineNo + 1})`);

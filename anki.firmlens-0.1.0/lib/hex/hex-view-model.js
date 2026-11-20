@@ -3,6 +3,7 @@
  */
 
 const { decodeRecordLine, hexRecordTypeLabel, byteColorClass } = require('./record-decode');
+const { isIntelHexCommentLine } = require('./hex-lines');
 
 /**
  * @typedef {object} HexViewByteCell
@@ -108,6 +109,9 @@ function buildHexViewModel(text) {
     }
     if (eof) {
       warnings.push(`Data after EOF at line ${lineNo + 1}`);
+      continue;
+    }
+    if (isIntelHexCommentLine(raw)) {
       continue;
     }
     if (!raw.startsWith(':')) {

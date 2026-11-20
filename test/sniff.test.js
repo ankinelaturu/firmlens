@@ -51,6 +51,13 @@ function run() {
     /Intel HEX/,
   );
 
+  const hexWithHeader = Buffer.from(
+    '; TYPE=SNAPSHOT\n; VERSION=1\n:020000042000DA\n:08100000010203040506070809FA\n:00000001FF\n',
+    'utf8',
+  );
+  const sniffed = sniffMemorySnapshot(hexWithHeader);
+  assert.ok(sniffed && typeof sniffed === 'object' && sniffed.kind === 'intel-hex', sniffed);
+
   console.log('sniff.test.js: OK');
 }
 

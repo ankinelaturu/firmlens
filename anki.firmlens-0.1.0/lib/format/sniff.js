@@ -4,6 +4,7 @@
  */
 
 const ELF_MAGIC = Buffer.from([0x7f, 0x45, 0x4c, 0x46]);
+const { firstIntelHexRecordLine, isIntelHexCommentLine } = require('../hex/hex-lines');
 
 const ET_NONE = 0;
 const ET_REL = 1;
@@ -130,21 +131,19 @@ function sniffMemorySnapshot(buffer) {
   }
 
   const text = buffer.toString('utf8');
-  const trimmed = text.trimStart();
-  if (!trimmed.startsWith(':')) {
-    return null;
-  }
-
-  const line = trimmed.split(/\r?\n/).find((l) => l.length > 0);
+  const line = firstIntelHexRecordLine(text);
   if (!line || !/^:[0-9A-Fa-f]{2}[0-9A-Fa-f]{4}[0-9A-Fa-f]{2}/.test(line)) {
     return null;
   }
 
   let sawData = false;
-  for (const raw of trimmed.split(/\r?\n/)) {
+  for (const raw of text.split(/\r?\n/)) {
     const l = raw.trim();
-    if (!l.startsWith(':')) {
+    if (!l || isIntelHexCommentLine(l)) {
       continue;
+    }
+    if (!l.startsWith(':')) {
+      return null;
     }
     if (l.length < 11) {
       return null;
