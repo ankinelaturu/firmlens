@@ -65,7 +65,7 @@ function renderHexViewerHtml(model, meta) {
     hueMap,
     snippetCache,
   });
-  const symbolsBody = renderSymbolsTabHtml(meta.firmware ?? null, { limits, snippetCache });
+  const symbolsBody = renderSymbolsTabHtml(meta.firmware ?? null, { limits, snippetCache, hueMap });
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -504,11 +504,32 @@ function renderHexViewerHtml(model, meta) {
       outline-offset: 1px;
     }
     table.symbols-grid tr.sym-tree-row { cursor: pointer; }
+    table.symbols-grid tr.sym-hue-row .sym-name-cell {
+      position: relative;
+    }
+    table.symbols-grid tr.sym-hue-row .sym-name-cell::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 2px;
+      bottom: 2px;
+      width: 3px;
+      border-radius: 2px;
+      background: hsl(var(--fl-sym-h), 58%, 54%);
+      opacity: 0.95;
+    }
+    table.symbols-grid tr.sym-hue-row.sym-tree-child .sym-name-cell::before {
+      opacity: 0.55;
+      width: 2px;
+    }
     table.symbols-grid tr.sym-tree-row.fl-row-selected td {
       background: var(--vscode-list-inactiveSelectionBackground, rgba(255, 255, 255, 0.06));
     }
-    table.symbols-grid tr.sym-tree-row.fl-row-selected td:first-child {
-      box-shadow: inset 2px 0 0 var(--vscode-focusBorder, #007fd4);
+    table.symbols-grid tr.sym-tree-row.fl-row-selected.sym-hue-row .sym-name-cell::before {
+      width: 4px;
+      opacity: 1;
+      background: hsl(var(--fl-sym-h), 62%, 58%);
+      box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007fd4);
     }
     tr.records-data.data-row { cursor: pointer; }
     tr.records-data.fl-row-selected td {
@@ -533,16 +554,66 @@ function renderHexViewerHtml(model, meta) {
     table.symbols-grid .sym-type-pill {
       display: inline-block;
       margin-left: 8px;
-      padding: 1px 6px;
+      padding: 1px 7px;
       border-radius: 4px;
       font-size: 10px;
       font-weight: 500;
       vertical-align: middle;
-      color: var(--vscode-badge-foreground, #ccc);
-      background: var(--vscode-badge-background, rgba(90, 93, 94, 0.45));
-      border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.4));
+      border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.45));
+    }
+    table.symbols-grid .sym-type-scalar {
+      color: var(--vscode-textPreformat-foreground, var(--vscode-foreground, #cccccc));
+      background: var(--vscode-textPreformat-background, var(--vscode-textCodeBlock-background, rgba(127, 127, 127, 0.22)));
+    }
+    table.symbols-grid .sym-type-pointer {
+      color: var(--vscode-textLink-foreground, #4daafc);
+      background: var(--vscode-textPreformat-background, rgba(56, 120, 200, 0.18));
+      border-color: var(--vscode-textLink-foreground, rgba(77, 170, 252, 0.45));
+    }
+    table.symbols-grid .sym-type-array {
+      color: var(--vscode-symbolIcon-enumeratorForeground, #c792ea);
+      background: var(--vscode-textPreformat-background, rgba(140, 90, 200, 0.16));
+      border-color: var(--vscode-symbolIcon-enumeratorForeground, rgba(199, 146, 234, 0.4));
+    }
+    table.symbols-grid .sym-type-struct {
+      color: var(--vscode-symbolIcon-structForeground, #4dbfa8);
+      background: var(--vscode-textPreformat-background, rgba(50, 150, 130, 0.16));
+      border-color: var(--vscode-symbolIcon-structForeground, rgba(77, 191, 168, 0.42));
+    }
+    table.symbols-grid .sym-type-padding {
+      color: var(--vscode-descriptionForeground, #a0a0a0);
+      background: repeating-linear-gradient(
+        -45deg,
+        var(--vscode-textPreformat-background, rgba(120, 120, 120, 0.12)),
+        var(--vscode-textPreformat-background, rgba(120, 120, 120, 0.12)) 3px,
+        var(--vscode-widget-border, rgba(80, 80, 80, 0.15)) 3px,
+        var(--vscode-widget-border, rgba(80, 80, 80, 0.15)) 6px
+      );
+    }
+    table.symbols-grid .sym-type-unknown {
+      color: var(--vscode-descriptionForeground, #888888);
+      background: transparent;
+      border-style: dashed;
     }
     table.symbols-grid .sym-addr-cell { white-space: nowrap; font-size: 0.92em; }
+    table.symbols-grid .sym-addr-hue {
+      background: hsla(var(--fl-sym-h), 42%, 40%, 0.14);
+      box-shadow: inset 0 0 0 1px hsla(var(--fl-sym-h), 40%, 50%, 0.2);
+      border-radius: 3px;
+    }
+    table.symbols-grid .sym-data-hex-chips {
+      letter-spacing: 0.02em;
+    }
+    table.symbols-grid .sym-data-byte {
+      display: inline-block;
+      padding: 0 3px;
+      margin: 0 1px;
+      border-radius: 2px;
+      line-height: 1.35;
+    }
+    table.symbols-grid .sym-data-ellipsis {
+      opacity: 0.7;
+    }
     table.symbols-grid .sym-data-cell {
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0;
     }

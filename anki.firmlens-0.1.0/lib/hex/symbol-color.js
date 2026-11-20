@@ -142,7 +142,19 @@ function buildSymbolHueMap(intervals) {
  */
 function resolveHue(name, hueMap) {
   if (hueMap?.has(name)) return hueMap.get(name);
+  const root = name.includes('.') ? name.split('.')[0] : name;
+  if (hueMap?.has(root)) return hueMap.get(root);
   return symbolHue(name);
+}
+
+/**
+ * DWARF interval / tree name to use for shared global hue.
+ * @param {string} [dwarfName]
+ */
+function hueKeyForSymbol(dwarfName) {
+  if (!dwarfName) return '';
+  if (!dwarfName.includes('.')) return dwarfName;
+  return dwarfName.split('.')[0];
 }
 
 /**
@@ -179,12 +191,25 @@ function paddingGutterStyle() {
   return 'border-left: 3px dashed rgba(140, 140, 140, 0.55);';
 }
 
+/**
+ * @param {string} name
+ * @param {Map<string, number> | undefined} [hueMap]
+ */
+function symbolRowHueVar(name, hueMap) {
+  const key = hueKeyForSymbol(name) || name;
+  const h = resolveHue(key, hueMap);
+  return `--fl-sym-h:${h}`;
+}
+
 module.exports = {
   symbolByteStyle,
   symbolGutterStyle,
   paddingByteStyle,
   paddingGutterStyle,
   symbolHue,
+  resolveHue,
+  hueKeyForSymbol,
+  symbolRowHueVar,
   buildSymbolHueMap,
   buildSymbolRuns,
   hueDistance,

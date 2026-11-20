@@ -31,6 +31,8 @@ assert.match(html, /records-data data-row/);
 assert.ok((html.match(/records-wrap/g) || []).length >= 1, 'single records table wrap');
 assert.ok(!html.includes('<th>Symbols</th>'), 'no Symbols column');
 assert.ok(html.includes('sym-mapped'), 'symbol-colored data bytes');
+assert.ok(html.includes('sym-hue-row'), 'symbols hue rows');
+assert.ok(html.includes('sym-data-byte'), 'colored symbol data chips');
 assert.ok((html.match(/<tr /g) || []).length >= 50, 'expected many table rows');
 
 console.log('render-hex-html.test.js: OK');

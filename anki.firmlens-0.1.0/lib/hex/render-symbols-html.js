@@ -6,6 +6,14 @@ const { buildSymbolTreeModel, formatLenHex, lenTooltip } = require('./symbol-tre
 const { buildAllIntervals } = require('./symbol-intervals');
 const { formatViewerTooltip } = require('./viewer-decode');
 const { formatGotoAddress } = require('./pointer-target');
+const {
+  symbolByteStyle,
+  paddingByteStyle,
+  hueKeyForSymbol,
+  symbolRowHueVar,
+} = require('./symbol-color');
+const { isPaddingInterval } = require('./symbol-intervals');
+const { DISPLAY_HEX_CAP } = require('./symbol-tree-model');
 
 /**
  * @param {string} s
@@ -26,10 +34,51 @@ function escapeAttr(s) {
 }
 
 /**
+ * @param {string} typeLabel
+ * @param {{ unknown?: boolean; label: string; container?: boolean }} n
+ */
+function typePillClass(typeLabel, n) {
+  if (n.unknown) return 'sym-type-unknown';
+  if (n.label === '(padding)' || typeLabel === 'padding') return 'sym-type-padding';
+  if (typeLabel?.includes('*')) return 'sym-type-pointer';
+  if (typeLabel?.includes('[')) return 'sym-type-array';
+  if (n.container) return 'sym-type-struct';
+  return 'sym-type-scalar';
+}
+
+/**
+ * @param {string} fullHex
+ * @param {string} displayHex
+ * @param {string} dwarfName
+ * @param {Map<string, number> | undefined} hueMap
+ * @param {boolean} padding
+ */
+function renderColoredDataHex(fullHex, displayHex, dwarfName, hueMap, padding) {
+  if (!fullHex) return '—';
+  const pairs = fullHex.split(' ').filter(Boolean);
+  const show = Math.min(pairs.length, DISPLAY_HEX_CAP);
+  const hueName = hueKeyForSymbol(dwarfName) || dwarfName;
+  const byteStyle = padding ? paddingByteStyle() : symbolByteStyle(hueName, hueMap);
+  /** @type {string[]} */
+  const chips = [];
+  for (let i = 0; i < show; i += 1) {
+    chips.push(
+      `<span class="sym-data-byte" style="${escapeAttr(byteStyle)}">${escapeHtml(pairs[i])}</span>`,
+    );
+  }
+  let tail = '';
+  if (pairs.length > show || displayHex.includes('…')) {
+    tail = ' <span class="sym-data-ellipsis">…</span>';
+  }
+  return chips.join(' ') + tail;
+}
+
+/**
  * @param {import('./resolve-hex-firmware').HexFirmwareContext | null | undefined} firmware
  * @param {{
  *   limits?: { maxStructFields: number; maxReadBytes: number };
  *   snippetCache?: ReturnType<typeof import('./source-snippet').createSourceSnippetCache> | null;
+ *   hueMap?: Map<string, number>;
  * }} [opts]
  */
 function renderSymbolsTabHtml(firmware, opts) {
@@ -49,6 +98,7 @@ function renderSymbolsTabHtml(firmware, opts) {
 
   const limits = opts?.limits || { maxStructFields: 32, maxReadBytes: 256 };
   const snippetCache = opts?.snippetCache ?? null;
+  const hueMap = opts?.hueMap;
   const axfPath = firmware.axfPath || '';
   const intervals = buildAllIntervals(firmware.dwarf);
   /** @type {Map<string, import('./symbol-intervals').SymbolInterval>} */
@@ -68,7 +118,13 @@ function renderSymbolsTabHtml(firmware, opts) {
       : n.container
         ? 'sym-data-cell sym-data-parent'
         : 'sym-data-cell sym-data-leaf';
-    const dataText = n.unknown ? '—' : escapeHtml(n.displayHex);
+    const interval = n.dwarfName ? byName.get(n.dwarfName) : null;
+    const padding = interval ? isPaddingInterval(interval) : false;
+    const dataText = n.unknown
+      ? '—'
+      : n.container
+        ? escapeHtml(n.displayHex)
+        : renderColoredDataHex(n.fullHex, n.displayHex, n.dwarfName || n.label, hueMap, padding);
     const memGotoBtn =
       n.gotoMemoryAddr != null
         ? `<button type="button" class="sym-goto-mem" data-goto-addr="${n.gotoMemoryAddr}" title="Go to address in HEX records" aria-label="Go to ${escapeAttr(
@@ -91,9 +147,15 @@ function renderSymbolsTabHtml(firmware, opts) {
         : '';
     const parentAttr = n.parentId ? ` data-parent-id="${escapeAttr(n.parentId)}"` : '';
     const rowAttr = n.container ? ' data-expanded="false"' : '';
+    const pillCls = typePillClass(n.typeLabel || '', n);
     const typePill = n.typeLabel
-      ? `<span class="sym-type-pill">${escapeHtml(n.typeLabel)}</span>`
+      ? `<span class="sym-type-pill ${pillCls}">${escapeHtml(n.typeLabel)}</span>`
       : '';
+    const hueStyle =
+      !n.unknown && n.dwarfName && hueMap
+        ? ` style="${escapeAttr(symbolRowHueVar(n.dwarfName, hueMap))}"`
+        : '';
+    const addrHueStyle = hueStyle;
     const gotoBtn =
       n.canGoto && n.dwarfName
         ? `<button type="button" class="sym-goto-src" aria-label="Go to source" title="Go to source" data-dwarf-name="${escapeAttr(
@@ -121,14 +183,16 @@ function renderSymbolsTabHtml(firmware, opts) {
       }
     }
 
-    rows.push(`      <tr class="sym-tree-row${childRow}"${hiddenAttr} data-node-id="${escapeAttr(
+    rows.push(`      <tr class="sym-tree-row sym-hue-row${childRow}"${hiddenAttr}${hueStyle} data-node-id="${escapeAttr(
       n.id,
     )}"${parentAttr}${rowAttr}>
         <td class="sym-name-cell${indent}"><span class="sym-name-inner">${toggle}<span class="sym-tree-label"${nameTipAttr}>${escapeHtml(
           n.label,
         )}</span>${typePill}${gotoBtn}</span></td>
-        <td class="sym-addr-cell">0x${n.start.toString(16).toUpperCase()}</td>
-        <td class="${dataClass}"${tipAttr} data-full-hex="${escapeAttr(n.fullHex)}"><span class="sym-data-inner"><span class="sym-data-hex">${dataText}</span><span class="sym-data-gotos">${memGotoBtn}${symGotoBtn}</span></span></td>
+        <td class="sym-addr-cell sym-addr-hue"${addrHueStyle}>0x${n.start.toString(16).toUpperCase()}</td>
+        <td class="${dataClass}"${tipAttr} data-full-hex="${escapeAttr(n.fullHex)}"><span class="sym-data-inner"><span class="sym-data-hex${
+          n.unknown || n.container ? '' : ' sym-data-hex-chips'
+        }">${dataText}</span><span class="sym-data-gotos">${memGotoBtn}${symGotoBtn}</span></span></td>
         <td class="sym-len-cell" title="${escapeAttr(lenTooltip(n.length))}">${escapeHtml(
           formatLenHex(n.length),
         )}</td>
