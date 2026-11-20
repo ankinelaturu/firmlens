@@ -13,7 +13,8 @@
     "onStartupFinished",
     "onLanguage:c",
     "onLanguage:cpp",
-    "onCustomEditor:firmlens.hexViewer"
+    "onCustomEditor:firmlens.hexViewer",
+    "onCustomEditor:firmlens.axfInspector"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -37,6 +38,11 @@
         "icon": "$(file-binary)"
       },
       {
+        "command": "firmlens.openAxfInspector",
+        "title": "FirmLens: Open AXF in Inspector",
+        "icon": "$(inspect)"
+      },
+      {
         "command": "firmlens.inspectAt",
         "title": "FirmLens: Inspect Snapshot at Position"
       }
@@ -51,6 +57,16 @@
           }
         ],
         "priority": "default"
+      },
+      {
+        "viewType": "firmlens.axfInspector",
+        "displayName": "FirmLens AXF Inspector",
+        "selector": [
+          {
+            "filenamePattern": "*.{axf,AXF,elf,out}"
+          }
+        ],
+        "priority": "option"
       }
     ],
     "configuration": {

@@ -13,6 +13,7 @@ const { registerFirmwareHover } = require('./src/hover');
 const { registerFirmwareInlayHints } = require('./src/inlay-hints');
 const { autoLoadSnapshotIfConfigured } = require('./src/auto-load');
 const { registerHexViewer } = require('./src/hex-viewer/provider');
+const { registerAxfViewer } = require('./src/axf-viewer/provider');
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -29,6 +30,7 @@ function activate(context) {
   registerFirmwareHover(context, session);
   registerFirmwareInlayHints(context, session);
   registerHexViewer(session, context);
+  registerAxfViewer(session, context);
 
   context.subscriptions.push(statusBar.item);
 
