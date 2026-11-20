@@ -174,4 +174,5 @@ module.exports = {
   expressionAt,
   findGlobalDeclLine,
   offsetAt,
+  isReserved,
 };

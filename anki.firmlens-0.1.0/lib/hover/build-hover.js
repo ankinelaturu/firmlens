@@ -23,7 +23,7 @@ const { formatHoverMarkdown, declHint, code } = require('./format-markdown');
  * @param {{ maxStructFields: number, maxReadBytes: number }} input.limits
  * @param {import('../format/metadata').SnapshotMetadata | null} [input.metadata]
  * @param {string[]} [input.sessionWarnings]
- * @returns {{ title: string, body: string[], address: string, hoverStart?: number, hoverEnd?: number } | { reason: string, hint?: string } | null}
+ * @returns {{ title: string, body: string[], address: string, snapshotValue: string, hoverStart?: number, hoverEnd?: number } | { reason: string, hint?: string } | null}
  */
 function buildFirmwareHover(input) {
   const offset = input.fullText
@@ -110,7 +110,13 @@ function buildFirmwareHover(input) {
       fromCapture,
       sessionWarnings,
     });
-    return { title: expr.member, body, address: addr, ...hoverRange };
+    return {
+      title: expr.member,
+      body,
+      address: addr,
+      snapshotValue: decoded.summary,
+      ...hoverRange,
+    };
   }
 
   const decoded = decodeAt(
@@ -145,9 +151,40 @@ function buildFirmwareHover(input) {
     sessionWarnings,
   });
 
-  return { title: expr.word, body, address: addr, ...hoverRange };
+  return {
+    title: expr.word,
+    body,
+    address: addr,
+    snapshotValue: decoded.summary,
+    ...hoverRange,
+  };
+}
+
+/**
+ * @param {Parameters<typeof buildFirmwareHover>[0]} input
+ * @param {number} lineIndex0
+ * @param {number} probeCol
+ * @returns {{ lineIndex0: number, endCol: number, snapshotValue: string, title: string, address: string } | null}
+ */
+function buildFirmwarePreviewAt(input, lineIndex0, probeCol) {
+  const result = buildFirmwareHover({
+    ...input,
+    lineIndex0,
+    charIndex: probeCol,
+  });
+  if (!result || 'reason' in result) {
+    return null;
+  }
+  return {
+    lineIndex0,
+    endCol: result.hoverEnd ?? probeCol,
+    snapshotValue: result.snapshotValue,
+    title: result.title,
+    address: result.address,
+  };
 }
 
 module.exports = {
   buildFirmwareHover,
+  buildFirmwarePreviewAt,
 };

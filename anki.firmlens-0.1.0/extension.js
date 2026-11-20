@@ -10,6 +10,7 @@ const { createSessionManager } = require('./src/session');
 const { registerSnapshotCommands } = require('./src/commands');
 const { createStatusBar } = require('./src/status-bar');
 const { registerFirmwareHover } = require('./src/hover');
+const { registerFirmwareInlayHints } = require('./src/inlay-hints');
 const { autoLoadSnapshotIfConfigured } = require('./src/auto-load');
 const { registerHexViewer } = require('./src/hex-viewer/provider');
 
@@ -26,6 +27,7 @@ function activate(context) {
 
   registerSnapshotCommands(context, session);
   registerFirmwareHover(context, session);
+  registerFirmwareInlayHints(context, session);
   registerHexViewer(session, context);
 
   context.subscriptions.push(statusBar.item);

@@ -64,6 +64,18 @@
           },
           "description": "Map build-machine path prefixes to local workspace folders."
         },
+        "firmlens.editorPreview": {
+          "type": "string",
+          "enum": ["off", "hover", "inlayHints", "both"],
+          "default": "both",
+          "enumDescriptions": [
+            "No inline snapshot preview in the C/C++ editor.",
+            "Snapshot values on hover only (full FirmLens markdown).",
+            "Inline inlay hints (snap: value) after resolvable globals; hover from C/C++ extensions only.",
+            "Inlay hints for quick values plus FirmLens hover for structs, provenance, and raw bytes."
+          ],
+          "description": "How snapshot values appear in C/C++ source while a FirmLens session is active."
+        },
         "firmlens.maxStructFields": {
           "type": "number",
           "default": 32,

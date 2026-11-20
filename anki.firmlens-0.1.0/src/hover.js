@@ -4,6 +4,7 @@
 
 const vscode = require('vscode');
 const { buildFirmwareHover } = require('../lib/hover/build-hover');
+const { getEditorPreviewMode, hoverEnabled, inlayHintsEnabled } = require('./editor-preview');
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -20,6 +21,12 @@ function registerFirmwareHover(context, session) {
       if (token.isCancellationRequested) {
         return null;
       }
+      const config = vscode.workspace.getConfiguration('firmlens');
+      const previewMode = getEditorPreviewMode(config);
+      if (!hoverEnabled(previewMode)) {
+        return null;
+      }
+
       const active = session.getSession();
       if (!active || !active.dwarf) {
         return null;
@@ -28,7 +35,6 @@ function registerFirmwareHover(context, session) {
         return null;
       }
 
-      const config = vscode.workspace.getConfiguration('firmlens');
       const remaps = config.get('sourceRootRemap', []);
       const limits = {
         maxStructFields: config.get('maxStructFields', 32),
@@ -53,8 +59,12 @@ function registerFirmwareHover(context, session) {
         return null;
       }
       if ('reason' in result) {
+        if (inlayHintsEnabled(previewMode)) {
+          return null;
+        }
         const { formatReasonMarkdown } = require('../lib/hover/format-markdown');
         const md = new vscode.MarkdownString(formatReasonMarkdown(result.reason, result.hint).join('\n'));
+        md.isTrusted = false;
         return new vscode.Hover(md);
       }
 
