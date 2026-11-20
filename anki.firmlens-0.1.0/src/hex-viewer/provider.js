@@ -80,6 +80,8 @@ function renderDocument(hexPath, session, webview, extensionUri) {
       webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'records-collapse.js') : undefined,
     tooltipScriptUri:
       webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'hex-tooltips.js') : undefined,
+    symbolsScriptUri:
+      webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'symbols-tree.js') : undefined,
   });
   const rowCount = model.sections.reduce((n, s) => n + s.rows.length, 0);
   outputChannel?.appendLine(

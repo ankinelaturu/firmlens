@@ -7,8 +7,8 @@ const fs = require('fs');
 const assert = require('assert');
 const { loadHexFile } = require('../anki.firmlens-0.1.0/lib/hex/hex-memory');
 const { loadDwarfIndex } = require('../anki.firmlens-0.1.0/lib/dwarf/dwarf-index');
-const { buildGlobalIntervals, gutterLabel } = require('../anki.firmlens-0.1.0/lib/hex/symbol-intervals');
-const { buildMemoryImage } = require('../anki.firmlens-0.1.0/lib/hex/memory-image');
+const { buildGlobalIntervals } = require('../anki.firmlens-0.1.0/lib/hex/symbol-intervals');
+const { buildSymbolTreeModel } = require('../anki.firmlens-0.1.0/lib/hex/symbol-tree-model');
 const { renderHexViewerHtml } = require('../anki.firmlens-0.1.0/lib/hex/render-hex-html');
 const { buildHexViewModel } = require('../anki.firmlens-0.1.0/lib/hex/hex-view-model');
 
@@ -21,22 +21,15 @@ const dwarf = loadDwarfIndex(axfPath);
 const intervals = buildGlobalIntervals(dwarf);
 
 assert.ok(intervals.length > 0, 'expected globals from dwarf');
-const regions = buildMemoryImage(memory);
-assert.ok(regions.length >= 2, 'flash + ram regions');
-
-const ram = regions.find((r) => r.linearBase === 0x20000000);
-assert.ok(ram, 'expected ram region');
-const label = gutterLabel(intervals, 0x20000008);
-assert.strictEqual(label.kind, 'start');
-assert.ok(label.text.length > 0);
+const tree = buildSymbolTreeModel(memory, dwarf);
+assert.ok(tree.some((n) => n.container), 'expected struct container');
 
 const html = renderHexViewerHtml(buildHexViewModel(fs.readFileSync(hexPath, 'utf8')), {
   fileName: 'snapshot.hex',
   sessionActive: true,
   firmware: { memory, dwarf, axfPath, fromSession: false },
 });
-assert.ok(html.includes('image-grid'), 'image tab table');
-assert.ok(html.includes('sym-index'), 'symbol sidebar');
-assert.ok(html.includes('id="sym-20000008"') || html.includes('sym-20000008'), 'anchor row');
+assert.ok(html.includes('symbols-grid'), 'symbols tab table');
+assert.ok(html.includes('tab-symbols'), 'symbols tab control');
 
 console.log('symbol-image.test.js: OK');

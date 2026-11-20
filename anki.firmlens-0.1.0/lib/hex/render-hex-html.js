@@ -3,9 +3,8 @@
  */
 
 const { renderRecordsHtml } = require('./render-records-html');
-const { renderImageTabHtml } = require('./render-image-html');
+const { renderSymbolsTabHtml } = require('./render-symbols-html');
 const { buildAllIntervals } = require('./symbol-intervals');
-const { buildMemoryImage } = require('./memory-image');
 const { buildSymbolHueMap } = require('./symbol-color');
 
 /**
@@ -42,6 +41,7 @@ function countDataRows(sections) {
  *   limits?: { maxStructFields: number; maxReadBytes: number };
  *   recordsScriptUri?: string;
  *   tooltipScriptUri?: string;
+ *   symbolsScriptUri?: string;
  * }} meta
  */
 function renderHexViewerHtml(model, meta) {
@@ -49,7 +49,6 @@ function renderHexViewerHtml(model, meta) {
   const dataRows = countDataRows(sections);
   const intervals = meta.firmware?.dwarf ? buildAllIntervals(meta.firmware.dwarf) : [];
   const hueMap = buildSymbolHueMap(intervals);
-  const imageRegions = meta.firmware?.memory ? buildMemoryImage(meta.firmware.memory) : [];
   const limits = meta.limits || { maxStructFields: 32, maxReadBytes: 256 };
 
   const recordsBody = renderRecordsHtml(model, {
@@ -58,11 +57,7 @@ function renderHexViewerHtml(model, meta) {
     limits,
     hueMap,
   });
-  const imageBody = renderImageTabHtml(imageRegions, intervals, {
-    firmware: meta.firmware,
-    limits,
-    hueMap,
-  });
+  const symbolsBody = renderSymbolsTabHtml(meta.firmware ?? null);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -99,14 +94,14 @@ function renderHexViewerHtml(model, meta) {
       margin-bottom: -1px;
     }
     #tab-records:checked ~ .tab-labels label[for="tab-records"],
-    #tab-image:checked ~ .tab-labels label[for="tab-image"] {
+    #tab-symbols:checked ~ .tab-labels label[for="tab-symbols"] {
       color: var(--vscode-foreground, #ccc);
       border-bottom-color: var(--vscode-focusBorder, #007acc);
       font-weight: 600;
     }
     .tab-panel { display: none; }
     #tab-records:checked ~ .tab-panels #panel-records { display: block; }
-    #tab-image:checked ~ .tab-panels #panel-image { display: block; }
+    #tab-symbols:checked ~ .tab-panels #panel-symbols { display: block; }
     details.block {
       margin: 0;
       border-top: 1px solid var(--vscode-panel-border, #444);
@@ -343,6 +338,43 @@ function renderHexViewerHtml(model, meta) {
     #fl-tip .fl-tip-summary { margin-bottom: 4px; }
     #fl-tip .fl-tip-lines .fl-tip-decode-line { opacity: 0.95; }
     #fl-tip .fl-tip-section { margin-top: 4px; }
+    #fl-tip .fl-tip-hex-block { white-space: pre-wrap; font-family: inherit; }
+    .symbols-wrap { overflow-x: auto; padding: 0 0 16px; }
+    table.symbols-grid { min-width: 720px; table-layout: fixed; }
+    table.symbols-grid .col-sym-name { width: 28%; }
+    table.symbols-grid .col-sym-addr { width: 7.5em; }
+    table.symbols-grid .col-sym-data { width: auto; }
+    table.symbols-grid .col-sym-len { width: 4.5em; }
+    table.symbols-grid .sym-len-hdr,
+    table.symbols-grid .sym-len-cell { text-align: right; }
+    table.symbols-grid .sym-name-cell { white-space: nowrap; }
+    table.symbols-grid .sym-tree-depth-1 { padding-left: 1.25em; }
+    table.symbols-grid .sym-tree-depth-2 { padding-left: 2em; }
+    table.symbols-grid .sym-tree-toggle {
+      margin: 0 4px 0 0; padding: 0 3px; border: none; cursor: pointer;
+      font: inherit; color: inherit; background: transparent; vertical-align: middle;
+    }
+    table.symbols-grid .sym-tree-leaf { display: inline-block; width: 1.2em; margin-right: 4px; }
+    table.symbols-grid .sym-tree-label { vertical-align: middle; }
+    table.symbols-grid .sym-addr-cell { white-space: nowrap; font-size: 0.92em; }
+    table.symbols-grid .sym-data-cell {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0;
+    }
+    table.symbols-grid .sym-data-unknown {
+      color: var(--vscode-descriptionForeground, #666);
+      opacity: 0.5;
+    }
+    table.symbols-grid .sym-data-parent.sym-data-suppressed {
+      color: transparent;
+      user-select: none;
+    }
+    table.symbols-grid .sym-data-parent.sym-data-suppressed::before {
+      content: '—';
+      color: var(--vscode-descriptionForeground, #777);
+    }
+    table.symbols-grid tr.sym-tree-child[hidden] { display: none; }
+    .symbols-empty { padding: 16px 14px; color: var(--vscode-descriptionForeground, #999); }
+    .symbols-empty code { font-size: 0.92em; }
   </style>
 </head>
 <body>
@@ -365,17 +397,18 @@ function renderHexViewerHtml(model, meta) {
   </div>
 
   <input class="tab-radios" type="radio" name="fl-tab" id="tab-records" checked />
-  <input class="tab-radios" type="radio" name="fl-tab" id="tab-image" />
+  <input class="tab-radios" type="radio" name="fl-tab" id="tab-symbols" />
   <div class="tab-labels">
     <label for="tab-records">HEX records</label>
-    <label for="tab-image">Image (symbols)</label>
+    <label for="tab-symbols">Symbols</label>
   </div>
   <div class="tab-panels">
-    <div class="tab-panel" id="panel-image">${imageBody}</div>
     <div class="tab-panel" id="panel-records">${recordsBody}</div>
+    <div class="tab-panel" id="panel-symbols">${symbolsBody}</div>
   </div>
   ${meta.recordsScriptUri ? `<script src="${escapeHtml(meta.recordsScriptUri)}"></script>` : ''}
   ${meta.tooltipScriptUri ? `<script src="${escapeHtml(meta.tooltipScriptUri)}"></script>` : ''}
+  ${meta.symbolsScriptUri ? `<script src="${escapeHtml(meta.symbolsScriptUri)}"></script>` : ''}
 </body>
 </html>`;
 }
