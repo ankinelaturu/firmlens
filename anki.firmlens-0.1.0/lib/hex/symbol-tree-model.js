@@ -27,6 +27,7 @@ const BYTES_PER_TOOLTIP_LINE = 16;
  * @property {string} fullHex
  * @property {string} displayHex
  * @property {string} tooltipHex
+ * @property {string} [typeLabel]
  */
 
 /**
@@ -157,6 +158,17 @@ function childLabel(sym) {
 }
 
 /**
+ * @param {string | undefined} typeLabel
+ * @param {boolean} unknown
+ * @param {string} label
+ */
+function typePillLabel(typeLabel, unknown, label) {
+  if (unknown || !typeLabel || typeLabel === 'unknown') return '';
+  if (label === '(padding)' && typeLabel === 'padding') return '';
+  return typeLabel;
+}
+
+/**
  * @param {HexMemory} memory
  * @param {DwarfIndex | null} dwarf
  * @returns {SymbolTreeNode[]}
@@ -190,9 +202,14 @@ function buildSymbolTreeModel(memory, dwarf) {
     const { display } = truncateHex(fullHex);
     const len = slot.end - slot.start;
     const id = meta.unknown ? `unknown-${slot.start}` : safeId(slot.name);
+    const label =
+      meta.label || ('name' in slot ? childLabel(/** @type {SymbolInterval} */ (slot)) : slot.name);
+    const intervalType =
+      'typeLabel' in slot && !meta.unknown ? /** @type {SymbolInterval} */ (slot).typeLabel : '';
+    const pill = typePillLabel(intervalType, Boolean(meta.unknown), label);
     nodes.push({
       id,
-      label: meta.label || ('name' in slot ? childLabel(/** @type {SymbolInterval} */ (slot)) : slot.name),
+      label,
       depth: meta.depth,
       parentId: meta.parentId,
       container: false,
@@ -203,6 +220,7 @@ function buildSymbolTreeModel(memory, dwarf) {
       fullHex,
       displayHex: meta.unknown ? '' : display,
       tooltipHex: fullHex ? formatTooltipHex(fullHex) : '',
+      typeLabel: pill || undefined,
     });
   };
 
@@ -244,6 +262,7 @@ function buildSymbolTreeModel(memory, dwarf) {
     const { display } = truncateHex(fullHex);
     const len = g.end - g.start;
 
+    const parentType = typePillLabel(g.typeLabel, false, g.name);
     nodes.push({
       id: parentId,
       label: g.name,
@@ -257,6 +276,7 @@ function buildSymbolTreeModel(memory, dwarf) {
       fullHex,
       displayHex: display,
       tooltipHex: fullHex ? formatTooltipHex(fullHex) : '',
+      typeLabel: parentType || undefined,
     });
 
     for (const k of kids) {

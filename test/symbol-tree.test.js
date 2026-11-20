@@ -20,6 +20,7 @@ assert.ok(network.displayHex.length > 0, 'collapsed aggregate hex');
 
 const child = nodes.find((n) => n.parentId === 'g_network' && n.label === 'packets_in');
 assert.ok(child, 'member row');
+assert.equal(child.typeLabel, 'uint32_t');
 
 const volt = nodes.find((n) => n.label === 'voltage_mv');
 assert.ok(volt, 'member label');

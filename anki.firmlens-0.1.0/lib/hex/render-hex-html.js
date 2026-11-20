@@ -356,6 +356,18 @@ function renderHexViewerHtml(model, meta) {
     }
     table.symbols-grid .sym-tree-leaf { display: inline-block; width: 1.2em; margin-right: 4px; }
     table.symbols-grid .sym-tree-label { vertical-align: middle; }
+    table.symbols-grid .sym-type-pill {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      vertical-align: middle;
+      color: var(--vscode-badge-foreground, #ccc);
+      background: var(--vscode-badge-background, rgba(90, 93, 94, 0.45));
+      border: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.4));
+    }
     table.symbols-grid .sym-addr-cell { white-space: nowrap; font-size: 0.92em; }
     table.symbols-grid .sym-data-cell {
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0;

@@ -63,11 +63,14 @@ function renderSymbolsTabHtml(firmware) {
         : '';
     const parentAttr = n.parentId ? ` data-parent-id="${escapeAttr(n.parentId)}"` : '';
     const rowAttr = n.container ? ' data-expanded="false"' : '';
+    const typePill = n.typeLabel
+      ? `<span class="sym-type-pill">${escapeHtml(n.typeLabel)}</span>`
+      : '';
 
     rows.push(`      <tr class="sym-tree-row${childRow}"${hiddenAttr} data-node-id="${escapeAttr(
       n.id,
     )}"${parentAttr}${rowAttr}>
-        <td class="sym-name-cell${indent}">${toggle}<span class="sym-tree-label">${escapeHtml(n.label)}</span></td>
+        <td class="sym-name-cell${indent}">${toggle}<span class="sym-tree-label">${escapeHtml(n.label)}</span>${typePill}</td>
         <td class="sym-addr-cell">0x${n.start.toString(16).toUpperCase()}</td>
         <td class="${dataClass}"${tipAttr} data-full-hex="${escapeAttr(n.fullHex)}">${dataText}</td>
         <td class="sym-len-cell" title="${escapeAttr(lenTooltip(n.length))}">${escapeHtml(
