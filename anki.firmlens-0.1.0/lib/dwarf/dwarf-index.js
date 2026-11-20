@@ -1,5 +1,5 @@
 /**
- * @fileoverview DWARF index for globals with fixed addresses (DWARF 4 subset).
+ * @fileoverview DWARF index for globals with fixed addresses (DWARF 3–5 subset).
  * @module lib/dwarf/dwarf-index
  */
 
@@ -60,7 +60,7 @@ function loadDwarfIndex(elfPath) {
     const unitLength = info.readUInt32LE(cuOff);
     if (unitLength === 0) break;
     const version = info.readUInt16LE(cuOff + 4);
-    if (version !== 4 && version !== 5) {
+    if (version < 2 || version > 5) {
       throw new Error(`Unsupported DWARF version ${version}`);
     }
     const debugAbbrevOff = info.readUInt32LE(cuOff + 6);

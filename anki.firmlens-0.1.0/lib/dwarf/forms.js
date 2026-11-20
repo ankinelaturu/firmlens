@@ -49,6 +49,23 @@ function readAttribute(buf, off, form, addrSize, debugStr, littleEndian) {
       const r = readUleb128(buf, p);
       return { value: r.value, next: r.next };
     }
+    case 0x10: {
+      const size = addrSize;
+      let val = 0;
+      if (size === 4) val = u32(p);
+      else {
+        val = Number(u32(p)) + Number(u32(p + 4)) * 0x100000000;
+      }
+      return { value: val, next: p + size, isRef: true };
+    }
+    case 0x11:
+      return { value: buf[p], next: p + 1, isRef: true };
+    case 0x14:
+      return { value: u32(p) + u32(p + 4) * 0x100000000, next: p + 8, isRef: true };
+    case 0x15: {
+      const r = readUleb128(buf, p);
+      return { value: r.value, next: r.next, isRef: true };
+    }
     case C.DW_FORM_ref4: {
       const ref = u32(p);
       return { value: ref, next: p + 4, isRef: true };
