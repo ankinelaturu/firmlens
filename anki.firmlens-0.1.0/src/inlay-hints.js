@@ -1,5 +1,5 @@
 /**
- * @fileoverview Inlay hints — :▦inspect affordance; click opens FirmLens hover.
+ * @fileoverview Inlay hints — ▤inspect affordance; click opens FirmLens hover.
  */
 
 const vscode = require('vscode');

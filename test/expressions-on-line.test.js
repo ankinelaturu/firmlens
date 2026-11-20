@@ -13,6 +13,6 @@ assert.ok(exprs.some((e) => e.kind === 'member' && e.end > e.start));
 assert.ok(exprs.some((e) => e.kind === 'ident' && line.slice(e.start, e.end) === 'g_network'));
 
 const label = inlayInspectLabel();
-assert.strictEqual(label, ':▦inspect', label);
+assert.strictEqual(label, '▤inspect', label);
 
 console.log('expressions-on-line.test.js: OK');

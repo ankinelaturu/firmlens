@@ -20,7 +20,7 @@ function createStatusBar() {
     update(summary) {
       item.command = 'firmlens.viewSnapshot';
       if (summary.active) {
-        item.tooltip = `FirmLens: view snapshot (${summary.label}) — :▦inspect inlays + hover for detail`;
+        item.tooltip = `FirmLens: view snapshot (${summary.label}) — ▤inspect inlays + hover for detail`;
       } else {
         item.tooltip =
           'FirmLens: view snapshot (loads from deploy/ if needed — use Load Snapshot to pick files)';
