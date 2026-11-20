@@ -67,6 +67,11 @@ function renderDocument(hexPath, session, webview, extensionUri) {
     Boolean(cur?.hexPath) && path.resolve(cur.hexPath) === path.resolve(hexPath);
   const firmware = resolveHexFirmware(hexPath, session);
   const config = vscode.workspace.getConfiguration('firmlens');
+  const remaps = /** @type {{from:string,to:string}[]} */ (config.get('sourceRootRemap', []));
+  /** @type {string[]} */
+  const sourceRoots = (vscode.workspace.workspaceFolders || []).map((f) => f.uri.fsPath);
+  const hexDir = path.dirname(hexPath);
+  sourceRoots.push(hexDir, path.dirname(hexDir));
   const html = renderHexViewerHtml(model, {
     fileName: path.basename(hexPath),
     sessionActive,
@@ -76,6 +81,8 @@ function renderDocument(hexPath, session, webview, extensionUri) {
       maxStructFields: config.get('maxStructFields', 32),
       maxReadBytes: config.get('maxReadBytes', 256),
     },
+    sourceRoots,
+    sourceRemaps: remaps,
     recordsScriptUri:
       webview && extensionUri ? hexViewerMediaUri(webview, extensionUri, 'records-collapse.js') : undefined,
     tooltipScriptUri:

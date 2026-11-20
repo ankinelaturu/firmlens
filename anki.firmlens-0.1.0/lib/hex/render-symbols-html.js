@@ -3,6 +3,8 @@
  */
 
 const { buildSymbolTreeModel, formatLenHex, lenTooltip } = require('./symbol-tree-model');
+const { buildAllIntervals } = require('./symbol-intervals');
+const { formatViewerTooltip } = require('./viewer-decode');
 
 /**
  * @param {string} s
@@ -24,8 +26,12 @@ function escapeAttr(s) {
 
 /**
  * @param {import('./resolve-hex-firmware').HexFirmwareContext | null | undefined} firmware
+ * @param {{
+ *   limits?: { maxStructFields: number; maxReadBytes: number };
+ *   snippetCache?: ReturnType<typeof import('./source-snippet').createSourceSnippetCache> | null;
+ * }} [opts]
  */
-function renderSymbolsTabHtml(firmware) {
+function renderSymbolsTabHtml(firmware, opts) {
   if (!firmware?.dwarf || !firmware.memory) {
     return (
       '<div class="symbols-empty">' +
@@ -39,6 +45,13 @@ function renderSymbolsTabHtml(firmware) {
   if (!nodes.length) {
     return '<p class="symbols-empty">No globals with addresses in DWARF.</p>';
   }
+
+  const limits = opts?.limits || { maxStructFields: 32, maxReadBytes: 256 };
+  const snippetCache = opts?.snippetCache ?? null;
+  const axfPath = firmware.axfPath || '';
+  const intervals = buildAllIntervals(firmware.dwarf);
+  /** @type {Map<string, import('./symbol-intervals').SymbolInterval>} */
+  const byName = new Map(intervals.map((s) => [s.name, s]));
 
   /** @type {string[]} */
   const rows = [];
@@ -73,10 +86,30 @@ function renderSymbolsTabHtml(firmware) {
           )}" data-decl-line="${n.declLine || 0}" data-decl-file="${escapeAttr(n.declFile || '')}"><span class="sym-goto-ico" aria-hidden="true">↗</span></button>`
         : '';
 
+    let nameTipAttr = '';
+    if (!n.unknown && n.dwarfName) {
+      const sym = byName.get(n.dwarfName);
+      if (sym) {
+        const tip = formatViewerTooltip(
+          firmware.memory,
+          firmware.dwarf,
+          sym,
+          sym.start,
+          limits,
+          axfPath,
+          snippetCache,
+        );
+        if (tip.html) {
+          nameTipAttr =
+            ` data-fl-tip="${escapeAttr(tip.plain)}" data-fl-tip-html="${escapeAttr(tip.html)}"`;
+        }
+      }
+    }
+
     rows.push(`      <tr class="sym-tree-row${childRow}"${hiddenAttr} data-node-id="${escapeAttr(
       n.id,
     )}"${parentAttr}${rowAttr}>
-        <td class="sym-name-cell${indent}"><span class="sym-name-inner">${toggle}<span class="sym-tree-label">${escapeHtml(
+        <td class="sym-name-cell${indent}"><span class="sym-name-inner"${nameTipAttr}>${toggle}<span class="sym-tree-label">${escapeHtml(
           n.label,
         )}</span>${typePill}${gotoBtn}</span></td>
         <td class="sym-addr-cell">0x${n.start.toString(16).toUpperCase()}</td>

@@ -6,6 +6,7 @@ const { renderRecordsHtml } = require('./render-records-html');
 const { renderSymbolsTabHtml } = require('./render-symbols-html');
 const { buildAllIntervals } = require('./symbol-intervals');
 const { buildSymbolHueMap } = require('./symbol-color');
+const { createSourceSnippetCache } = require('./source-snippet');
 
 /**
  * @param {string} s
@@ -43,6 +44,8 @@ function countDataRows(sections) {
  *   tooltipScriptUri?: string;
  *   symbolsScriptUri?: string;
  *   symbolsGotoScriptUri?: string;
+ *   sourceRoots?: string[];
+ *   sourceRemaps?: { from: string; to: string }[];
  * }} meta
  */
 function renderHexViewerHtml(model, meta) {
@@ -51,14 +54,16 @@ function renderHexViewerHtml(model, meta) {
   const intervals = meta.firmware?.dwarf ? buildAllIntervals(meta.firmware.dwarf) : [];
   const hueMap = buildSymbolHueMap(intervals);
   const limits = meta.limits || { maxStructFields: 32, maxReadBytes: 256 };
+  const snippetCache = createSourceSnippetCache(meta.sourceRoots || [], meta.sourceRemaps || []);
 
   const recordsBody = renderRecordsHtml(model, {
     intervals,
     firmware: meta.firmware ?? null,
     limits,
     hueMap,
+    snippetCache,
   });
-  const symbolsBody = renderSymbolsTabHtml(meta.firmware ?? null);
+  const symbolsBody = renderSymbolsTabHtml(meta.firmware ?? null, { limits, snippetCache });
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -258,7 +263,7 @@ function renderHexViewerHtml(model, meta) {
     #fl-tip {
       position: fixed;
       z-index: 10000;
-      max-width: min(440px, calc(100vw - 24px));
+      max-width: min(560px, calc(100vw - 24px));
       padding: 8px 10px;
       font-size: 12px;
       line-height: 1.45;
@@ -309,6 +314,58 @@ function renderHexViewerHtml(model, meta) {
       color: var(--vscode-descriptionForeground, #999);
       margin-bottom: 6px;
     }
+    #fl-tip .fl-tip-hint { margin-top: 2px; }
+    #fl-tip .fl-tip-src {
+      margin-top: 6px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--vscode-widget-border, #454545);
+      background: var(--vscode-editor-background, #1e1e1e);
+    }
+    #fl-tip .fl-tip-file-line { opacity: 0.75; font-weight: 400; }
+    #fl-tip .fl-tip-src-view {
+      font-family: inherit;
+      font-size: 0.92em;
+      line-height: 1.35;
+      max-width: min(92vw, 520px);
+    }
+    #fl-tip .fl-tip-src-row {
+      display: flex;
+      gap: 0;
+      align-items: stretch;
+      white-space: pre;
+    }
+    #fl-tip .fl-tip-src-row.fl-tip-src-focus {
+      background: var(--vscode-editor-lineHighlightBackground, rgba(255,255,255,0.06));
+    }
+    #fl-tip .fl-tip-gutter {
+      flex: 0 0 2.6em;
+      text-align: right;
+      padding: 0 6px 0 4px;
+      color: var(--vscode-editorLineNumber-foreground, #858585);
+      user-select: none;
+      border-right: 1px solid var(--vscode-widget-border, #454545);
+    }
+    #fl-tip .fl-tip-src-row.fl-tip-src-focus .fl-tip-gutter {
+      color: var(--vscode-editorLineNumber-activeForeground, #c6c6c6);
+    }
+    #fl-tip .fl-tip-src-line {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 0 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #fl-tip .fl-tip-src-trunc { opacity: 0.92; }
+    #fl-tip .fl-syn-kw { color: var(--vscode-symbolIcon-keywordForeground, #c586c0); }
+    #fl-tip .fl-syn-ty { color: var(--vscode-symbolIcon-classForeground, #4ec9b0); }
+    #fl-tip .fl-syn-fn { color: var(--vscode-symbolIcon-functionForeground, #dcdcaa); }
+    #fl-tip .fl-syn-id { color: var(--vscode-editor-foreground, #d4d4d4); }
+    #fl-tip .fl-syn-str { color: var(--vscode-debugTokenExpression-string, #ce9178); }
+    #fl-tip .fl-syn-num { color: var(--vscode-debugTokenExpression-number, #b5cea8); }
+    #fl-tip .fl-syn-com { color: #6a9955; font-style: italic; }
+    #fl-tip .fl-syn-pp { color: var(--vscode-symbolIcon-keywordForeground, #c586c0); }
+    #fl-tip .fl-syn-meta { color: var(--vscode-symbolIcon-constructorForeground, #4fc1ff); }
     #fl-tip .fl-tip-code {
       margin: 6px 0 8px;
       padding: 6px 8px;
@@ -384,6 +441,7 @@ function renderHexViewerHtml(model, meta) {
       outline: 1px solid var(--vscode-focusBorder);
       outline-offset: 1px;
     }
+    table.symbols-grid .sym-name-inner[data-fl-tip-html] { cursor: default; }
     table.symbols-grid .sym-tree-depth-1 { padding-left: 1.25em; }
     table.symbols-grid .sym-tree-depth-2 { padding-left: 2em; }
     table.symbols-grid .sym-tree-toggle {

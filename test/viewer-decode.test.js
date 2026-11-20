@@ -19,6 +19,11 @@ const memory = loadHexFile(hex);
 const dwarf = loadDwarfIndex(axf);
 const intervals = buildAllIntervals(dwarf);
 const limits = { maxStructFields: 32, maxReadBytes: 256 };
+const { createSourceSnippetCache } = require('../anki.firmlens-0.1.0/lib/hex/source-snippet');
+const snippetCache = createSourceSnippetCache([
+  path.join(__dirname, '..'),
+  path.join(__dirname, '../fixtures/project'),
+]);
 
 assert.ok(intervals.some((s) => s.name.includes('.')), 'expected member intervals');
 
@@ -32,14 +37,20 @@ if (ram) {
   assert.ok(sym, 'symbol at start');
   const tip = tooltipForByte(memory, dwarf, sym, ram.start, limits, axf);
   assert.ok(tip.includes(sym.name.split('.')[0]), 'tooltip mentions symbol');
-  const rich = formatViewerTooltip(memory, dwarf, sym, ram.start, limits, axf);
-  assert.ok(rich.html.includes('fl-tip-code'), 'tooltip has decl code block');
+  const rich = formatViewerTooltip(memory, dwarf, sym, ram.start, limits, axf, snippetCache);
+  assert.ok(
+    rich.html.includes('fl-tip-src') || rich.html.includes('fl-tip-code'),
+    'tooltip has decl or source block',
+  );
   assert.ok(rich.html.includes('fl-tip-mono'), 'tooltip uses mono sections');
 }
 
 if (volt) {
-  const inner = formatViewerTooltip(memory, dwarf, volt, volt.start + 1, limits, axf);
-  assert.ok(inner.html.includes('fl-tip-code'), 'offset byte still has decl block');
+  const inner = formatViewerTooltip(memory, dwarf, volt, volt.start + 1, limits, axf, snippetCache);
+  assert.ok(
+    inner.html.includes('fl-tip-src') || inner.html.includes('fl-tip-code'),
+    'offset byte still has decl block',
+  );
 }
 
 const netPad = intervals.find((s) => s.name === 'g_network.(padding)');

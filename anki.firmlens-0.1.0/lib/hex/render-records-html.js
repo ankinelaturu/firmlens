@@ -51,6 +51,7 @@ function bandClass(section) {
  * @property {import('./resolve-hex-firmware').HexFirmwareContext | null} [firmware]
  * @property {{ maxStructFields: number; maxReadBytes: number }} limits
  * @property {Map<string, number>} [hueMap]
+ * @property {ReturnType<typeof import('./source-snippet').createSourceSnippetCache> | null} [snippetCache]
  */
 
 /**
@@ -86,6 +87,7 @@ function renderDataBytes(row, ctx) {
           addr,
           limits,
           axfPath,
+          ctx.snippetCache ?? null,
         );
         tipPlain = tip.plain;
         tipHtml = tip.html;

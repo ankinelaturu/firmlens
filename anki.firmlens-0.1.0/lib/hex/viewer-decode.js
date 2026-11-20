@@ -5,6 +5,7 @@
 const { decodeAt } = require('../decode/decode-value');
 const { basename } = require('../dwarf/dwarf-index');
 const { declHint } = require('../hover/format-markdown');
+const { highlightCLineHtml } = require('./c-syntax-html');
 const {
   isPaddingInterval,
   paddingParentName,
@@ -86,9 +87,10 @@ function resolveAddressSize(dwarf) {
  * @param {number} byteAddress
  * @param {{ maxStructFields: number, maxReadBytes: number }} limits
  * @param {string} _axfPath
+ * @param {ReturnType<typeof import('./source-snippet').createSourceSnippetCache> | null} [snippetCache]
  * @returns {{ plain: string; html: string }}
  */
-function formatViewerTooltip(memory, dwarf, sym, byteAddress, limits, _axfPath) {
+function formatViewerTooltip(memory, dwarf, sym, byteAddress, limits, _axfPath, snippetCache) {
   const offset = byteAddress - sym.start;
   if (offset < 0 || byteAddress >= sym.end) return { plain: '', html: '' };
 
@@ -169,11 +171,25 @@ function formatViewerTooltip(memory, dwarf, sym, byteAddress, limits, _axfPath) 
     `<div class="fl-tip-meta">${escapeHtml(sym.typeLabel)} · storage <span class="fl-tip-mono">${escapeHtml(storage)}</span></div>`,
   ];
 
-  if (file && line) {
+  const snippet = snippetCache?.getSnippet(
+    String(sym.declFile || global.declFile || ''),
+    line,
+    sym.name,
+  );
+  if (snippet) {
+    if (hint) {
+      htmlParts.push(`<div class="fl-tip-meta fl-tip-hint">${escapeHtml(hint)}</div>`);
+    }
+    htmlParts.push(snippet.html);
+    plainParts.push(snippet.plain);
+  } else if (file && line) {
     htmlParts.push(
       `<div class="fl-tip-code">`,
       `<div class="fl-tip-file">${escapeHtml(file)}</div>`,
-      `<div class="fl-tip-line"><span class="fl-tip-ln">${line}</span><span class="fl-tip-sep">:</span> ${escapeHtml(declLine)}</div>`,
+      `<div class="fl-tip-line fl-tip-src-row">` +
+        `<span class="fl-tip-gutter">${line}</span>` +
+        `<span class="fl-tip-src-line">${highlightCLineHtml(declLine)}</span>` +
+        `</div>`,
       `</div>`,
     );
   }
